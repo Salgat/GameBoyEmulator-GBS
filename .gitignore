@@ -1,0 +1,44 @@
+# Directories
+.idea/
+include/SFML/
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# CMake
+CMakeFiles/
+*.cmake
+Makefile
+CMakeCache.txt
+
+# Misc
+*.lnk
+Thumbs.db
+
+# Exclude from ignore

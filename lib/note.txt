@@ -1,0 +1,1 @@
+Place "lib___.a" library files in this directory. 
