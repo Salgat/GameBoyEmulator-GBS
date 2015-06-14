@@ -172,20 +172,20 @@ void SWAPr_l() {uint8_t upper_nibble = HL.lower  & 0xF0; uint8_t lower_nibble = 
 void SWAPr_a() {uint8_t upper_nibble = AF.higher & 0xF0; uint8_t lower_nibble = AF.higher & 0x0F; AF.higher = (lower_nibble << 4) | (higher_nibble >> 4); if(AF.higher) AF.lower = 0x80; m_clock = 1;}
 
 // Data Manipulation
-void ADDr_b() {}
-void ADDr_c
-void ADDr_d
-void ADDr_e
-void ADDr_h
-void ADDr_l
-void ADDr_a
-void ADDHL
-void ADDn
-void ADDHLBC
-void ADDHLDE
-void ADDHLHL
-void ADDHLSP
-void ADDSPn
+void ADDr_b() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(BC.higher); AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + BC.higher & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += BC.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void ADDr_c() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(BC.lower);  AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + BC.lower  & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += BC.lower;  if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void ADDr_d() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(DE.higher); AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + DE.higher & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += DE.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void ADDr_e() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(DE.lower);  AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + DE.lower  & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += DE.lower;  if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void ADDr_h() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(HL.higher); AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + HL.higher & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += HL.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void ADDr_l() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(HL.lower);  AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + HL.lower  & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += HL.lower;  if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void ADDr_a() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(AF.higher); AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + AF.higher & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += AF.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void ADDHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint16_t result = static_cast<uint16_t>(AF.higher) + memory_value; AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + memory_value & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += memory_value; if(!AF.higher) AF.lower |= 0x80; m_clock = 2;}
+void ADDn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; uint16_t result = static_cast<uint16_t>(AF.higher) + memory_value; AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + memory_value & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += memory_value; if(!AF.higher) AF.lower |= 0x80; m_clock = 2;}
+void ADDHLBC() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(BC.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += BC.word; m_clock = 3;}
+void ADDHLDE() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(DE.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += DE.word; m_clock = 3;}
+void ADDHLHL() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(HL.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += HL.word; m_clock = 3;}
+void ADDHLSP() {uint32_t result = static_cast<uint32_t>(stack_pointer.word) + static_cast<uint32_t>(HL.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += stack_pointer.word; m_clock = 3;}
+void ADDSPn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; uint32_t result = static_cast<uint32_t>(memory_value) + static_cast<uint32_t>(stack_pointer.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += stack_pointer.word; m_clock = 4;}
 
 void ADCr_b
 void ADCr_c
