@@ -56,8 +56,14 @@ sf::Image Display::RenderFrame() {
             for (std::size_t x = 0; x < 32; ++x) {
 				//std::cout << "Tile number located at: " << std::hex << static_cast<unsigned int>(tile_map_address + (32*y+x)) << std::endl;
                 uint8_t tile_number = mmu->ReadByte(tile_map_address + (32*y+x));
+                if (tile_number == 0x30) {
+                    std::cout << "Tile 0x30" << std::endl;
+                }
                 uint16_t tile_address = tile_set_address - tile_set_offset + tile_number*16;
                 //std::cout << "Drawing tile number: " << std::hex << static_cast<unsigned int>(tile_number) << " at address: " << static_cast<unsigned int>(tile_address) << std::endl;
+                if (tile_address == 0x8300) {
+                    std::cout << "Drawing at 0x8300" << std::endl;
+                }
                 DrawTilePattern(background_map, x, y, tile_address);
             }
         }
@@ -87,6 +93,9 @@ sf::Image Display::RenderFrame() {
         for (uint16_t index = tile_map_address; index < tile_map_address+8; ++index) {
             std::cout << "MAP index value: " << std::hex << static_cast<unsigned int>(index) << ", " << static_cast<unsigned int>(mmu->ReadByte(index)) << std::endl;
         }*/
+
+
+        //std::cout << "Tile map and set address: " << std::hex << tile_map_address << ", " << tile_set_address << std::endl;
     }
 
     return frame;

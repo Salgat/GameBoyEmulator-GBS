@@ -295,6 +295,8 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
         // VRAM
         case 0x8000:
         case 0x9000:
+            //if (address >= 0x9000)
+            //    std::cout << "Writing to address with value for pc: " << std::hex << static_cast<unsigned int>(address) << ", " << static_cast<unsigned int>(value) << ", " << static_cast<unsigned int>(cpu->program_counter.word) << std::endl;
             vram[address & 0x1FFF] = value;
             break;
 
