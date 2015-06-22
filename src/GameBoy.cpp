@@ -25,18 +25,18 @@ void GameBoy::Reset() {
     timer.Reset();
 }
 
+// Todo: Frame calling v-blank 195-196x per frame??
 sf::Image GameBoy::RenderFrame() {
 	cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
+	int count = 0;
 	do {
 		if (cpu.halt) {
 			cpu.m_clock = 1;
 		} else {
-			//std::cout << "Executing next instruction" << std::endl;
 			cpu.ExecuteNextInstruction();
-			//std::cout << "Finished executing instruction" << std::endl;
 		}
-
-
+		cpu.clock += cpu.m_clock;
+		cpu.m_clock = 0;
 
 		uint8_t if_memory_value = mmu.ReadByte(0xFF0F);
 		if (mmu.interrupt_enable and cpu.interrupt_master_enable and if_memory_value) {
@@ -55,13 +55,10 @@ sf::Image GameBoy::RenderFrame() {
 		}
 		
 		cpu.clock += cpu.m_clock;
-        timer.Increment();
         cpu.m_clock = 0;
+		
+		timer.Increment();
 	} while(cpu.clock < cpu.frame_clock);
-
-    //auto frame = sf::Image();
-    //frame.create(160, 144);
-	//return frame;
 	
 	return display.RenderFrame();
 }

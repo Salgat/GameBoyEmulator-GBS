@@ -18,12 +18,15 @@ void Timer::Initialize(Processor* cpu_, MemoryManagementUnit* mmu_) {
 }
 
 void Timer::Reset() {
+	clock = 0;
     divider_clock = 0;
     divider_clock_tracker = 0;
     counter_clock = 0;
     counter_clock_tracker = 0;
-    scanline_clock = 0;
-    scanline_clock_tracker = 0;
+    scanline = 0x90;
+    scanline_tracker = 0;
+	
+	v_blank_triggered = false;
 }
 
 void Timer::Increment() {
@@ -60,46 +63,47 @@ void Timer::Increment() {
     }
 
     // Also keep track of scanline (0xFF44)
-    scanline_clock_tracker += cycles;
-    if (scanline_clock_tracker >= 456) {
-        ++scanline_clock;
-        scanline_clock_tracker -= 456;
+	scanline_tracker += cycles;
+	if (scanline_tracker > 456/4) {
+		++scanline;
+        scanline_tracker -= 456/4;
     }
-    if (scanline_clock > 153) {
-        scanline_clock -= 153;
+    if (scanline > 153) {
+        scanline -= 153;
+		v_blank_triggered = false;
     }
 
-    // Update LCD Status based on scanline and timing
+    // Update LCD Status based on scanline and timing	
     uint8_t lcd_status = mmu->zram[0xFF41&0xFF] & 0xF8; // Last 3 bits are updated here
-    if (scanline_clock >= 144) {
+    if (scanline >= 144) {
         // V-Blank
         lcd_status |= 0b01;
-        mmu->interrupt_flag |= 0x01;
-    } else if (scanline_clock_tracker > 80+172 ) {
+		if (!v_blank_triggered) {
+			mmu->interrupt_flag |= 0x01;
+			v_blank_triggered = true;
+		}
+    } else if (scanline_tracker > (80+172)/4 ) {
         // H-Blank
         lcd_status |= 0b00;
-    } else if (scanline_clock_tracker > 80) {
+    } else if (scanline_tracker > 80/4) {
         // Scanline accessing VRAM
         lcd_status |= 0b11;
     } else {
         // Scanline accessing OAM
         lcd_status |= 0b10;
     }
-    // Finally, check if 0xFF45 matches scanline_clock and set bit 2 of 0xFF41 and possibly trigger interrupt
+    // Finally, check if 0xFF45 matches scanline and set bit 2 of 0xFF41 and possibly trigger interrupt
     uint8_t ly_compare = mmu->zram[0xFF45&0xFF];
-    if (ly_compare == scanline_clock) {
+    if (ly_compare == scanline) {
         lcd_status |= 0b100;
         mmu->interrupt_flag |= 0x02;
     }
-    // TODO: Trigger interrupt?
 
     // Update timers
-    //mmu->WriteByte(0xFF04, divider_clock);
-    //mmu->WriteByte(0xFF05, counter_clock);
     mmu->zram[0x04] = divider_clock;
     mmu->zram[0x05] = counter_clock;
     mmu->zram[0xFF41&0xFF] = lcd_status;
-    mmu->zram[0xFF44&0xFF] = scanline_clock;
+    mmu->zram[0xFF44&0xFF] = scanline;
 
     clock = cpu->clock;
 }

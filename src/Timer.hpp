@@ -25,8 +25,8 @@ public:
                            //       - 01: 262144Hz
                            //       - 10: 65536Hz
                            //       - 11: 16384Hz
-    uint8_t scanline_clock;
-    uint64_t scanline_clock_tracker;
+    uint8_t scanline;
+    uint64_t scanline_tracker;
 
     Timer();
 
@@ -38,6 +38,7 @@ private:
     Processor* cpu;
     MemoryManagementUnit* mmu;
 
+	bool v_blank_triggered;
 };
 
 #endif //GAMEBOYEMULATOR_TIMER_HPP

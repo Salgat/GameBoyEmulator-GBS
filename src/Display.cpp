@@ -54,9 +54,10 @@ sf::Image Display::RenderFrame() {
         // 1 row = 32 bytes, each byte is a tile number, 32 rows total
         for (std::size_t y = 0; y < 32; ++y) {
             for (std::size_t x = 0; x < 32; ++x) {
-                uint8_t tile_number = mmu->ReadByte(tile_set_address + (32*y+x));
+				//std::cout << "Tile number located at: " << std::hex << static_cast<unsigned int>(tile_map_address + (32*y+x)) << std::endl;
+                uint8_t tile_number = mmu->ReadByte(tile_map_address + (32*y+x));
                 uint16_t tile_address = tile_set_address - tile_set_offset + tile_number*16;
-                //std::cout << "Drawing tile number: " << static_cast<unsigned int>(tile_number) << " at address: " << static_cast<unsigned int>(tile_address) << std::endl;
+                //std::cout << "Drawing tile number: " << std::hex << static_cast<unsigned int>(tile_number) << " at address: " << static_cast<unsigned int>(tile_address) << std::endl;
                 DrawTilePattern(background_map, x, y, tile_address);
             }
         }

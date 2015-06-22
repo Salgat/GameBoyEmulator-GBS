@@ -179,12 +179,13 @@ void Processor::Initialize(MemoryManagementUnit* mmu_) {
 }
 
 void Processor::ExecuteNextInstruction() {
+	m_clock = 0;
 	uint8_t memory_value = mmu->ReadByte(program_counter.word++);
 	//std::cout << "Opcode, Program counter, Flag: " << std::hex << static_cast<unsigned int>(memory_value) << ", " << program_counter.word-1 << ", " << (AF.word) << std::endl;
     // LCDC: LCD control register (FF40)
     // STAT: LCD status register (FF41)
     // LY:   LCDC Y-Coordinate which determines which line on the screen is at (0-153, where 144-153 is V-Blank) (FF44)
-/*
+
     std::cout << "---------------------------------------------------" << std::endl;
     std::cout << std::hex << "AF  : " << std::setw(8) << static_cast<unsigned int>(AF.word) << "\tLCDC: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF40&0xFF]) << std::endl
                           << "BC  : " << std::setw(8) <<  static_cast<unsigned int>(BC.word) << "\tSTAT: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF41&0xFF]) << std::endl
@@ -196,7 +197,10 @@ void Processor::ExecuteNextInstruction() {
                           //<< "IMA : " << std::setw(8) <<  0 << "\tROM : " << std::setw(8) <<  static_cast<unsigned int>(mmu->mbc1.rom_bank) << std::endl
                           << "OPC : " << std::setw(8) << static_cast<unsigned int>(memory_value) << std::endl;
 
-*/
+	//if (program_counter.word > 0xC24C) {
+	//	std::cout << "Got it: " << static_cast<unsigned int>(program_counter.word) << std::endl;
+	//}
+
     opcode_map[memory_value]();
 	clock += m_clock;
 	//m_clock = 0;
