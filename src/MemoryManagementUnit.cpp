@@ -19,7 +19,7 @@ MemoryManagementUnit::MemoryManagementUnit() {
     eram = std::vector<uint8_t>(0x2000, 0);
     wram = std::vector<uint8_t>(0x2000, 0);
     oam = std::vector<uint8_t>(0xA0, 0);
-    zram = std::vector<uint8_t>(128, 0);
+    zram = std::vector<uint8_t>(0x100, 0);
 
     Reset();
 }
@@ -71,38 +71,40 @@ void MemoryManagementUnit::Reset() {
             0xF5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xFB, 0x86, 0x20, 0xFE, 0x3E, 0x01, 0xE0, 0x50};
 
     // Memory is documented to reset to these values
-    rom[0xFF00] = 0x00; // Reset Joystick to all unpressed
-    rom[0xFF05] = 0x00;
-    rom[0xFF06] = 0x00;
-    rom[0xFF07] = 0x00;
-    rom[0xFF10] = 0x80;
-    rom[0xFF11] = 0xBF;
-    rom[0xFF12] = 0xF3;
-    rom[0xFF14] = 0xBF;
-    rom[0xFF16] = 0x3F;
-    rom[0xFF17] = 0x00;
-    rom[0xFF19] = 0xBF;
-    rom[0xFF1A] = 0x7F;
-    rom[0xFF1B] = 0xFF;
-    rom[0xFF1C] = 0x9F;
-    rom[0xFF1E] = 0xBF;
-    rom[0xFF20] = 0xFF;
-    rom[0xFF21] = 0x00;
-    rom[0xFF22] = 0x00;
-    rom[0xFF23] = 0xBF;
-    rom[0xFF24] = 0x77;
-    rom[0xFF25] = 0xF3;
-    rom[0xFF26] = 0xF1;
-    rom[0xFF40] = 0x91;
-    rom[0xFF42] = 0x00;
-    rom[0xFF43] = 0x00;
-    rom[0xFF45] = 0x00;
-    rom[0xFF47] = 0xFC;
-    rom[0xFF48] = 0xFF;
-    rom[0xFF49] = 0xFF;
-    rom[0xFF4A] = 0x00;
-    rom[0xFF4B] = 0x00;
-    rom[0xFFFF] = 0x00; interrupt_enable = 0x00; // the two are equivalent
+    zram[0xFF00&0xFF] = 0x00; // Reset Joystick to all unpressed
+    zram[0xFF05&0xFF] = 0x00;
+    zram[0xFF06&0xFF] = 0x00;
+    zram[0xFF07&0xFF] = 0x00;
+    zram[0xFF10&0xFF] = 0x80;
+    zram[0xFF11&0xFF] = 0xBF;
+    zram[0xFF12&0xFF] = 0xF3;
+    zram[0xFF14&0xFF] = 0xBF;
+    zram[0xFF16&0xFF] = 0x3F;
+    zram[0xFF17&0xFF] = 0x00;
+    zram[0xFF19&0xFF] = 0xBF;
+    zram[0xFF1A&0xFF] = 0x7F;
+    zram[0xFF1B&0xFF] = 0xFF;
+    zram[0xFF1C&0xFF] = 0x9F;
+    zram[0xFF1E&0xFF] = 0xBF;
+    zram[0xFF20&0xFF] = 0xFF;
+    zram[0xFF21&0xFF] = 0x00;
+    zram[0xFF22&0xFF] = 0x00;
+    zram[0xFF23&0xFF] = 0xBF;
+    zram[0xFF24&0xFF] = 0x77;
+    zram[0xFF25&0xFF] = 0xF3;
+    zram[0xFF26&0xFF] = 0xF1;
+    zram[0xFF40&0xFF] = 0x91;
+    zram[0xFF41&0xFF] = 0x85;
+    zram[0xFF42&0xFF] = 0x00;
+    zram[0xFF43&0xFF] = 0x00;
+    zram[0xFF45&0xFF] = 0x00;
+    zram[0xFF47&0xFF] = 0xFC;
+    zram[0xFF48&0xFF] = 0xFF;
+    zram[0xFF49&0xFF] = 0xFF;
+    zram[0xFF4A&0xFF] = 0x00;
+    zram[0xFF4B&0xFF] = 0x00;
+    zram[0xFFFF&0xFF] = 0x00; interrupt_enable = 0x00; // the two are equivalent
+	interrupt_flag = 0xE1; // 0xFF0F
 
     // Setup ROM banks and RAM
     cartridge_type = cartridge_rom[0x0147];
@@ -129,6 +131,7 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
                     return bios[address];
                 } else if (cpu->program_counter.word == 0x0100) {
                     // BIOS has reached the final instruction and memory can go back to normal mode
+					std::cout << "Setting bios to false" << std::endl;
                     bios_mode = false;
                 } else {
                     return rom[address];
@@ -192,17 +195,33 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
                         // Zero-Page RAM (ZRAM or sometimes called HRAM)
                         return zram[address & 0x7F];
                     } else {
-                        return 0;
                         // TODO: Finish this section (input, graphics registers, etc)
                         switch (address & 0xF0) {
                             case 0x00:
                                 switch (address & 0xF) {
-                                    // 0xFF00: Gamepad inputs
-                                    // TODO:
-                                    //case 0:
-                                   //     return 0;
+                                    // 0xFF00: Joystick
+									// Todo: Add interrupt support
+									case 0: 
+										return zram[address&0xFF];
+									
+									// Timers
+									case 4: case 5: case 6: case 7:
+										return zram[address&0xFF];
+										
+									case 15:
+										return interrupt_flag;
+										
+									default: return 0x00;	
                                 }
-                        }
+                        
+							case 0x10: case 0x20: case 0x30:
+								return 0;
+								
+							case 0x40: case 0x50: case 0x60: case 0x70:
+							
+								//std::cout << "Reading zram address and value: " << static_cast<unsigned int>(address) << ", " << static_cast<unsigned int>(zram[address&0xFF]) << std::endl;
+								return zram[address&0xFF];
+						}
                     }
             }
     }
@@ -219,6 +238,10 @@ uint16_t MemoryManagementUnit::ReadWord(uint16_t address) {
  * Writes a single byte to memory.
  */
 void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
+    if (address == 0x9800) {
+        //std::cout << "Writing to 0x9800: " << std::hex << static_cast<unsigned int>(value) << std::endl;
+    }
+
     switch(address & 0xF000) {
         // ROM Bank 0
         case 0x0000:
@@ -313,14 +336,26 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                     } else if (address > 0xFF7F) {
                         zram[address & 0x7F] = value;
                     } else {
-                        return;
                         switch(address & 0xF0) {
                             case 0x00:
                                 switch(address & 0xF) {
                                     case 0:
-                                        // TODO
-                                        break;
+                                        zram[address&0xFF] = value; break;
+										
+									case 4: case 5: case 6: case 7:
+										zram[address&0xFF] = value; break;
+										
+									case 15:
+										interrupt_flag = value; break;
                                 }
+								break;
+								
+							case 0x10: case 0x20: case 0x30:
+								break;
+								
+							case 0x40: case 0x50: case 0x60: case 0x70:
+								//std::cout << "Writing to zram address and value: " << static_cast<unsigned int>(address) << ", " << static_cast<unsigned int>(value) << std::endl;
+								zram[address&0xFF] = value; break;
                         }
                     }
             }

@@ -30,6 +30,7 @@ public:
     std::vector<uint8_t> oam; // Object Attribute Memory (for sprites)
     std::vector<uint8_t> zram; // Zero-Page RAM (ZRAM or sometimes called HRAM)
     uint8_t interrupt_enable; // IE register, which allows interrupts if enabled (1)
+	uint8_t interrupt_flag; // IF register
 
     bool bios_mode;
     uint8_t cartridge_type; // Determines which memory bank controller is used

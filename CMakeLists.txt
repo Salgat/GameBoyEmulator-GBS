@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 add_executable(GameBoyEmulator ${SOURCE_FILES}  src/main.cpp
                                                 src/Processor.cpp
                                                 src/GameBoy.hpp
-                                                src/GameBoy.cpp src/MemoryManagementUnit.hpp src/MemoryManagementUnit.cpp src/Display.hpp src/Display.cpp)
+                                                src/GameBoy.cpp src/MemoryManagementUnit.hpp src/MemoryManagementUnit.cpp src/Display.hpp src/Display.cpp src/Timer.hpp src/Timer.cpp)
 
 target_link_libraries(GameBoyEmulator ${CMAKE_CURRENT_SOURCE_DIR}/lib/libsfml-graphics.a
                                       ${CMAKE_CURRENT_SOURCE_DIR}/lib/libsfml-window.a

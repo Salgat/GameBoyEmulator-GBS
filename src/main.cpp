@@ -6,20 +6,24 @@
 
 sf::RenderWindow window;
 
-void PollEvents() {
+bool PollEvents() {
     sf::Event event;
     while (window.pollEvent(event)) {
-        if (event.type == sf::Event::Closed)
+        if (event.type == sf::Event::Closed) {
             window.close();
+			return false;
+		}	
     }
+	
+	return true;
 }
 
 void DrawFrame(sf::Image const& frame) {
-    window.clear(sf::Color::Black);
+    window.clear(sf::Color::Green);
 
-    static sf::Texture texture;
-    texture.update(frame);
-    static sf::Sprite sprite;
+    sf::Texture texture;
+    texture.loadFromImage(frame, sf::IntRect(0, 0, 160, 144));
+    sf::Sprite sprite;
     sprite.setTexture(texture);
 
     window.draw(sprite);
@@ -32,11 +36,32 @@ int main() {
 
     GameBoy gameboy;
     gameboy.LoadGame("TESTGAME.GB");
+    //gameboy.LoadGame("adjtris.gb");
+    //gameboy.LoadGame("09-op r,r.gb");
+	
+	// Tested instructions (just seeing if it crashes)
+	// 01 - Good
+	// 02 - Bad (Executing bad opcode)
+	// 03 - Good
+	// 04 - Good
+	// 05 - Good
+	// 06 - Good
+	// 07 - Good
+	// 08 - Good
+	// 09 - Good
+	// 10 - Good
+	// 11 - Good
 
-    while(true) {
+    unsigned int count = 0;
+	bool running = true;
+    while(running) {
+		//std::cout << "Processing Frame" << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
-        PollEvents();
+		//std::cout << "Polling events" << std::endl;
+        running = PollEvents();
+		//std::cout << "Rendering frame" << std::endl;
         sf::Image frame = gameboy.RenderFrame();
+		//std::cout << "Drawing frame" << std::endl;
         DrawFrame(frame);
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -46,6 +71,23 @@ int main() {
         if (sleep_time > std::chrono::duration<double, std::milli>(0)) {
             std::this_thread::sleep_for(sleep_time);
         }
+
+        // Debugging
+        /*if (++count > 120) {
+            count = 0;
+
+            std::cout << "VRAM 0x8700: " << std::endl;
+            for (unsigned int index = 0; index < 16; ++index) {
+                std::cout << std::hex << static_cast<unsigned int>(gameboy.mmu.ReadByte(0x8700+index)) << std::endl;
+            }
+
+            std::cout << "0xFF42 and 0xFF43: " << std::hex << static_cast<unsigned int>(gameboy.mmu.ReadByte(0xFF42)) << ", " << static_cast<unsigned int>(gameboy.mmu.ReadByte(0xFF43)) << std::endl;
+
+            std::cout << "VRAM 0x9800: " << std::endl;
+            for (unsigned int index = 0; index < 9; ++index) {
+                std::cout << std::hex << static_cast<unsigned int>(gameboy.mmu.ReadByte(0x9800+index)) << std::endl;
+            }
+        }*/
     }
 
 	std::cout << "Exit Emulator" << std::endl;

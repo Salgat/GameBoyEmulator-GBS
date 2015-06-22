@@ -2,6 +2,7 @@
 // Created by Austin on 6/11/2015.
 //
 #include <iostream>
+#include <iomanip>
 #include "Processor.hpp"
 #include "MemoryManagementUnit.hpp"
 
@@ -179,10 +180,26 @@ void Processor::Initialize(MemoryManagementUnit* mmu_) {
 
 void Processor::ExecuteNextInstruction() {
 	uint8_t memory_value = mmu->ReadByte(program_counter.word++);
-	//std::cout << "Executing opcode at program counter: " << static_cast<unsigned int>(memory_value) << ", " << program_counter.word-1 << std::endl;
-	opcode_map[memory_value]();
+	//std::cout << "Opcode, Program counter, Flag: " << std::hex << static_cast<unsigned int>(memory_value) << ", " << program_counter.word-1 << ", " << (AF.word) << std::endl;
+    // LCDC: LCD control register (FF40)
+    // STAT: LCD status register (FF41)
+    // LY:   LCDC Y-Coordinate which determines which line on the screen is at (0-153, where 144-153 is V-Blank) (FF44)
+/*
+    std::cout << "---------------------------------------------------" << std::endl;
+    std::cout << std::hex << "AF  : " << std::setw(8) << static_cast<unsigned int>(AF.word) << "\tLCDC: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF40&0xFF]) << std::endl
+                          << "BC  : " << std::setw(8) <<  static_cast<unsigned int>(BC.word) << "\tSTAT: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF41&0xFF]) << std::endl
+                          << "DE  : " << std::setw(8) <<  static_cast<unsigned int>(DE.word) << "\tLY  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF44&0xFF]) << std::endl
+                          << "HL  : " << std::setw(8) <<  static_cast<unsigned int>(HL.word) << "\tCNTR: " << std::setw(8) <<  0 << std::endl
+                          << "SP  : " << std::setw(8) <<  static_cast<unsigned int>(stack_pointer.word) << "\tIE  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_enable) << std::endl
+                          << "PC  : " << std::setw(8) <<  static_cast<unsigned int>(program_counter.word-1) << "\tIF  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_flag) << std::endl
+                          << "IME : " << std::setw(8) <<  static_cast<unsigned int>(interrupt_master_enable) << "\tNA  : " << std::setw(8) <<  0 << std::endl
+                          //<< "IMA : " << std::setw(8) <<  0 << "\tROM : " << std::setw(8) <<  static_cast<unsigned int>(mmu->mbc1.rom_bank) << std::endl
+                          << "OPC : " << std::setw(8) << static_cast<unsigned int>(memory_value) << std::endl;
+
+*/
+    opcode_map[memory_value]();
 	clock += m_clock;
-	m_clock = 0;
+	//m_clock = 0;
 }
 
 void Processor::ExecuteOpcode(uint8_t opcode) {
@@ -449,23 +466,24 @@ void Processor::XORr_a() {AF.higher ^= AF.higher; AF.lower = AF.higher?0:0x80; m
 void Processor::XORHL() {AF.higher ^= mmu->ReadByte(HL.word); AF.lower = AF.higher?0:0x80; m_clock = 1;}
 void Processor::XORn() {AF.higher ^= mmu->ReadByte(program_counter.word++); AF.lower = AF.higher?0:0x80; m_clock = 1;}
 
-void Processor::INCr_b() {BC.higher++; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::INCr_c() {BC.lower++ ; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::INCr_d() {DE.higher++; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::INCr_e() {DE.lower++ ; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::INCr_h() {HL.higher++; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::INCr_l() {HL.lower++ ; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::INCr_a() {AF.higher++; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::INCHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); mmu->WriteByte(HL.word, ++memory_value); AF.lower = memory_value?0:0x80; m_clock = 3;}
 
-void Processor::DECr_b() {BC.higher--; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::DECr_c() {BC.lower-- ; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::DECr_d() {DE.higher--; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::DECr_e() {DE.lower-- ; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::DECr_h() {HL.higher--; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::DECr_l() {HL.lower-- ; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::DECr_a() {AF.higher--; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::DECHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); mmu->WriteByte(HL.word, --memory_value); AF.lower = memory_value?0:0x80; m_clock = 3;}
+void Processor::INCr_b() {uint8_t half = ((BC.higher&0xF+1)&0x10)?0x20:0x00; BC.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= BC.higher?0:0x80; m_clock = 1;}
+void Processor::INCr_c() {uint8_t half = ((BC.lower &0xF+1)&0x10)?0x20:0x00; BC.lower ++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= BC.lower ?0:0x80; m_clock = 1;}
+void Processor::INCr_d() {uint8_t half = ((DE.higher&0xF+1)&0x10)?0x20:0x00; DE.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= DE.higher?0:0x80; m_clock = 1;}
+void Processor::INCr_e() {uint8_t half = ((DE.lower &0xF+1)&0x10)?0x20:0x00; DE.lower ++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= DE.lower ?0:0x80; m_clock = 1;}
+void Processor::INCr_h() {uint8_t half = ((HL.higher&0xF+1)&0x10)?0x20:0x00; HL.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= HL.higher?0:0x80; m_clock = 1;}
+void Processor::INCr_l() {uint8_t half = ((HL.lower &0xF+1)&0x10)?0x20:0x00; HL.lower ++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= HL.lower ?0:0x80; m_clock = 1;}
+void Processor::INCr_a() {uint8_t half = ((AF.higher&0xF+1)&0x10)?0x20:0x00; AF.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= AF.higher?0:0x80; m_clock = 1;}
+void Processor::INCHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t half = ((memory_value&0xF+1)&0x10)?0x20:0x00; memory_value++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= memory_value?0:0x80; mmu->WriteByte(HL.word, memory_value); m_clock = 3;}
+
+void Processor::DECr_b() {uint8_t half = ((BC.higher&0x1F-1)&0x10)?0x00:0x20; BC.higher--; AF.lower &= 0x10; AF.lower |= BC.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_c() {uint8_t half = ((BC.lower &0x1F-1)&0x10)?0x00:0x20; BC.lower --; AF.lower &= 0x10; AF.lower |= BC.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_d() {uint8_t half = ((DE.higher&0x1F-1)&0x10)?0x00:0x20; DE.higher--; AF.lower &= 0x10; AF.lower |= DE.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_e() {uint8_t half = ((DE.lower &0x1F-1)&0x10)?0x00:0x20; DE.lower --; AF.lower &= 0x10; AF.lower |= DE.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_h() {uint8_t half = ((HL.higher&0x1F-1)&0x10)?0x00:0x20; HL.higher--; AF.lower &= 0x10; AF.lower |= HL.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_l() {uint8_t half = ((HL.lower &0x1F-1)&0x10)?0x00:0x20; HL.lower --; AF.lower &= 0x10; AF.lower |= HL.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_a() {uint8_t half = ((AF.higher&0x1F-1)&0x10)?0x00:0x20; AF.higher--; AF.lower &= 0x10; AF.lower |= AF.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t half = ((memory_value&0x1F-1)&0x10)?0x00:0x20; memory_value--; AF.lower &= 0x10; AF.lower |= memory_value?0:0x80; AF.lower |= 0x40; mmu->WriteByte(HL.word, memory_value); m_clock = 3;}
  
 void Processor::INCBC() {++BC.word; m_clock = 2;} // Note: z80.js shows as 1 cycle?
 void Processor::INCDE() {++DE.word; m_clock = 2;}
@@ -793,34 +811,38 @@ void Processor::POPAF() {AF.lower = mmu->ReadByte(stack_pointer.word++); AF.high
 // Jump
 void Processor::JPnn() {program_counter.word = mmu->ReadWord(program_counter.word); m_clock = 3;}
 void Processor::JPHL() {program_counter.word = HL.word; m_clock = 1;}
-void Processor::JPNZnn() {m_clock = 3; if (!AF.lower&0x80) {program_counter.word = mmu->ReadWord(program_counter.word); ++m_clock;} else program_counter.word+=2;}
+void Processor::JPNZnn() {m_clock = 3; if (!(AF.lower&0x80)) {program_counter.word = mmu->ReadWord(program_counter.word); ++m_clock;} else program_counter.word+=2;}
 void Processor::JPZnn() {m_clock = 3; if (AF.lower&0x80) {program_counter.word = mmu->ReadWord(program_counter.word); ++m_clock;} else program_counter.word+=2;}
-void Processor::JPNCnn() {m_clock = 3; if (!AF.lower&0x10) {program_counter.word = mmu->ReadWord(program_counter.word); ++m_clock;} else program_counter.word+=2;}
+void Processor::JPNCnn() {m_clock = 3; if (!(AF.lower&0x10)) {program_counter.word = mmu->ReadWord(program_counter.word); ++m_clock;} else program_counter.word+=2;}
 void Processor::JPCnn() {m_clock = 3; if (AF.lower&0x10) {program_counter.word = mmu->ReadWord(program_counter.word); ++m_clock;} else program_counter.word+=2;}
 
 // Jump by adding signed value to program counter (make sure the conversion with int16_t is right!!!!!!!!)
-void Processor::JRn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; program_counter.word += memory_value; ++m_clock;}
-void Processor::JRNZn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(!AF.lower&0x80) {program_counter.word += memory_value; ++m_clock;}}
-void Processor::JRZn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(AF.lower&0x80) {program_counter.word += memory_value; ++m_clock;}}
-void Processor::JRNCn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(!AF.lower&0x10) {program_counter.word += memory_value; ++m_clock;}}
-void Processor::JRCn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(AF.lower&0x10) {program_counter.word += memory_value; ++m_clock;}}
+//void Processor::JRn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; program_counter.word += memory_value; ++m_clock;}
+void Processor::JRn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}
+void Processor::JRNZn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; if(!(AF.lower&0x80)) {program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}}
+//void Processor::JRZn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(AF.lower&0x80) {program_counter.word += memory_value; ++m_clock;}}
+void Processor::JRZn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; if(AF.lower&0x80) {program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}}
+//void Processor::JRNCn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(!(AF.lower&0x10)) {program_counter.word += memory_value; ++m_clock;}}
+void Processor::JRNCn()  {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; if(!(AF.lower&0x10)) {program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}}
+//void Processor::JRCn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(AF.lower&0x10) {program_counter.word += memory_value; ++m_clock;}}
+void Processor::JRCn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; if(AF.lower&0x10) {program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}}
 
 // Note: This should be "STOP", but implementation is a conditional jump if B register is decremented and > 0?
 void Processor::DJNZn() {}
 
 // Note: 5 instead of 3 cycles? Need to see the extra 2 cycles are true or just an implementation rule
 void Processor::CALLnn() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word+2); program_counter.word = mmu->ReadWord(program_counter.word); m_clock = 5;}
-void Processor::CALLNZnn() {m_clock = 3; if (!AF.lower&0x80) {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word+2); program_counter.word = mmu->ReadWord(program_counter.word); m_clock += 2;} else program_counter.word += 2;}
+void Processor::CALLNZnn() {m_clock = 3; if (!(AF.lower&0x80)) {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word+2); program_counter.word = mmu->ReadWord(program_counter.word); m_clock += 2;} else program_counter.word += 2;}
 void Processor::CALLZnn() {m_clock = 3; if (AF.lower&0x80) {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word+2); program_counter.word = mmu->ReadWord(program_counter.word); m_clock += 2;} else program_counter.word += 2;}
-void Processor::CALLNCnn() {m_clock = 3; if (!AF.lower&0x10) {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word+2); program_counter.word = mmu->ReadWord(program_counter.word); m_clock += 2;} else program_counter.word += 2;}
+void Processor::CALLNCnn() {m_clock = 3; if (!(AF.lower&0x10)) {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word+2); program_counter.word = mmu->ReadWord(program_counter.word); m_clock += 2;} else program_counter.word += 2;}
 void Processor::CALLCnn() {m_clock = 3; if (AF.lower&0x10) {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word+2); program_counter.word = mmu->ReadWord(program_counter.word); m_clock += 2;} else program_counter.word += 2;}
 
 void Processor::RET() {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock = 3;}
 void Processor::RETI() {interrupt_master_enable = 1; InterruptReturn(); program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock = 3;}
-void Processor::RETNZ() {m_clock = 1; if(!AF.lower&0x80) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
-void Processor::RETZ() {m_clock = 1; if(!AF.lower&0x80) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
-void Processor::RETNC() {m_clock = 1; if(!AF.lower&0x10) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
-void Processor::RETC() {m_clock = 1; if(!AF.lower&0x10) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
+void Processor::RETNZ() {m_clock = 1; if(!(AF.lower&0x80)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
+void Processor::RETZ() {m_clock = 1; if(!(AF.lower&0x80)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
+void Processor::RETNC() {m_clock = 1; if(!(AF.lower&0x10)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
+void Processor::RETC() {m_clock = 1; if(!(AF.lower&0x10)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
 
 void Processor::RST00() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x00; m_clock = 3;}
 void Processor::RST08() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x08; m_clock = 3;}
