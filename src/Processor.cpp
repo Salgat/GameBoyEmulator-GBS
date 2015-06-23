@@ -374,13 +374,13 @@ void Processor::LDIOCA() {mmu->WriteByte(0xFF00 + BC.lower, AF.higher); m_clock 
 void Processor::LDHLSPn() {HL.word = mmu->ReadWord(stack_pointer.word + mmu->ReadByte(program_counter.word)); ++program_counter.word; m_clock = 3;}
 
 // Swap upper and lower nibbles of register (affects zero flag)
-void Processor::SWAPr_b() {uint8_t higher_nibble = BC.higher & 0xF0; uint8_t lower_nibble = BC.higher & 0x0F; BC.higher = (lower_nibble << 4) | (higher_nibble >> 4); if(BC.higher) AF.lower = 0x80; m_clock = 1;}
-void Processor::SWAPr_c() {uint8_t higher_nibble = BC.lower  & 0xF0; uint8_t lower_nibble = BC.lower  & 0x0F; BC.lower  = (lower_nibble << 4) | (higher_nibble >> 4); if(BC.lower)  AF.lower = 0x80; m_clock = 1;}
-void Processor::SWAPr_d() {uint8_t higher_nibble = DE.higher & 0xF0; uint8_t lower_nibble = DE.higher & 0x0F; DE.higher = (lower_nibble << 4) | (higher_nibble >> 4); if(DE.higher) AF.lower = 0x80; m_clock = 1;}
-void Processor::SWAPr_e() {uint8_t higher_nibble = DE.lower  & 0xF0; uint8_t lower_nibble = DE.lower  & 0x0F; DE.lower  = (lower_nibble << 4) | (higher_nibble >> 4); if(DE.lower)  AF.lower = 0x80; m_clock = 1;}
-void Processor::SWAPr_h() {uint8_t higher_nibble = HL.higher & 0xF0; uint8_t lower_nibble = HL.higher & 0x0F; HL.higher = (lower_nibble << 4) | (higher_nibble >> 4); if(HL.higher) AF.lower = 0x80; m_clock = 1;}
-void Processor::SWAPr_l() {uint8_t higher_nibble = HL.lower  & 0xF0; uint8_t lower_nibble = HL.lower  & 0x0F; HL.lower  = (lower_nibble << 4) | (higher_nibble >> 4); if(HL.lower)  AF.lower = 0x80; m_clock = 1;}
-void Processor::SWAPr_a() {uint8_t higher_nibble = AF.higher & 0xF0; uint8_t lower_nibble = AF.higher & 0x0F; AF.higher = (lower_nibble << 4) | (higher_nibble >> 4); if(AF.higher) AF.lower = 0x80; m_clock = 1;}
+void Processor::SWAPr_b() {uint8_t higher_nibble = BC.higher & 0xF0; uint8_t lower_nibble = BC.higher & 0x0F; BC.higher = (lower_nibble << 4) | (higher_nibble >> 4); AF.lower = (!BC.higher)?0x80:0; m_clock = 1;}
+void Processor::SWAPr_c() {uint8_t higher_nibble = BC.lower  & 0xF0; uint8_t lower_nibble = BC.lower  & 0x0F; BC.lower  = (lower_nibble << 4) | (higher_nibble >> 4); AF.lower = (!BC.lower )?0x80:0; m_clock = 1;}
+void Processor::SWAPr_d() {uint8_t higher_nibble = DE.higher & 0xF0; uint8_t lower_nibble = DE.higher & 0x0F; DE.higher = (lower_nibble << 4) | (higher_nibble >> 4); AF.lower = (!DE.higher)?0x80:0; m_clock = 1;}
+void Processor::SWAPr_e() {uint8_t higher_nibble = DE.lower  & 0xF0; uint8_t lower_nibble = DE.lower  & 0x0F; DE.lower  = (lower_nibble << 4) | (higher_nibble >> 4); AF.lower = (!DE.lower )?0x80:0; m_clock = 1;}
+void Processor::SWAPr_h() {uint8_t higher_nibble = HL.higher & 0xF0; uint8_t lower_nibble = HL.higher & 0x0F; HL.higher = (lower_nibble << 4) | (higher_nibble >> 4); AF.lower = (!HL.higher)?0x80:0; m_clock = 1;}
+void Processor::SWAPr_l() {uint8_t higher_nibble = HL.lower  & 0xF0; uint8_t lower_nibble = HL.lower  & 0x0F; HL.lower  = (lower_nibble << 4) | (higher_nibble >> 4); AF.lower = (!HL.lower )?0x80:0; m_clock = 1;}
+void Processor::SWAPr_a() {uint8_t higher_nibble = AF.higher & 0xF0; uint8_t lower_nibble = AF.higher & 0x0F; AF.higher = (lower_nibble << 4) | (higher_nibble >> 4); AF.lower = (!AF.higher)?0x80:0; m_clock = 1;}
 
 // Data Manipulation
 // Add to register or memory
@@ -848,13 +848,13 @@ void Processor::SLAr_a() {uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher =
 //void Processor::SLLr_l
 //void Processor::SLLr_a
 
-void Processor::SRAr_b() {uint8_t carry_in = BC.higher&0x80; uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = (BC.higher>>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
-void Processor::SRAr_c() {uint8_t carry_in = BC.lower &0x80; uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = (BC.lower >>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
-void Processor::SRAr_d() {uint8_t carry_in = DE.higher&0x80; uint8_t carry_out = DE.higher&1?0x10:0; DE.higher = (DE.higher>>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
-void Processor::SRAr_e() {uint8_t carry_in = DE.lower &0x80; uint8_t carry_out = DE.lower &1?0x10:0; DE.lower  = (DE.lower >>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
-void Processor::SRAr_h() {uint8_t carry_in = HL.higher&0x80; uint8_t carry_out = HL.higher&1?0x10:0; HL.higher = (HL.higher>>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
-void Processor::SRAr_l() {uint8_t carry_in = HL.lower &0x80; uint8_t carry_out = HL.lower &1?0x10:0; HL.lower  = (HL.lower >>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
-void Processor::SRAr_a() {uint8_t carry_in = AF.higher&0x80; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = (AF.higher>>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRAr_b() {AF.lower = (BC.higher&0x1)?0x10:0; BC.higher = (BC.higher&0x80) | (BC.higher>>1); if(!BC.higher) AF.lower |= 0x80; m_clock = 2;}
+void Processor::SRAr_c() {AF.lower = (BC.lower &0x1)?0x10:0; BC.lower  = (BC.lower &0x80) | (BC.lower >>1); if(!BC.lower ) AF.lower |= 0x80; m_clock = 2;}
+void Processor::SRAr_d() {AF.lower = (DE.higher&0x1)?0x10:0; DE.higher = (DE.higher&0x80) | (DE.higher>>1); if(!DE.higher) AF.lower |= 0x80; m_clock = 2;}
+void Processor::SRAr_e() {AF.lower = (DE.lower &0x1)?0x10:0; DE.lower  = (DE.lower &0x80) | (DE.lower >>1); if(!DE.lower ) AF.lower |= 0x80; m_clock = 2;}
+void Processor::SRAr_h() {AF.lower = (HL.higher&0x1)?0x10:0; HL.higher = (HL.higher&0x80) | (HL.higher>>1); if(!HL.higher) AF.lower |= 0x80; m_clock = 2;}
+void Processor::SRAr_l() {AF.lower = (HL.lower &0x1)?0x10:0; HL.lower  = (HL.lower &0x80) | (HL.lower >>1); if(!HL.lower ) AF.lower |= 0x80; m_clock = 2;}
+void Processor::SRAr_a() {AF.lower = (AF.higher&0x1)?0x10:0; AF.higher = (AF.higher&0x80) | (AF.higher>>1); if(!AF.higher) AF.lower |= 0x80; m_clock = 2;}
 
 void Processor::SRLr_b() {uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = BC.higher>>1; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
 void Processor::SRLr_c() {uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = BC.lower >>1; AF.lower = BC.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
