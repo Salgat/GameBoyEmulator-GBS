@@ -185,7 +185,7 @@ void Processor::ExecuteNextInstruction() {
     // LCDC: LCD control register (FF40)
     // STAT: LCD status register (FF41)
     // LY:   LCDC Y-Coordinate which determines which line on the screen is at (0-153, where 144-153 is V-Blank) (FF44)
-
+/*
     std::cout << "---------------------------------------------------" << std::endl;
     std::cout << std::hex << "AF  : " << std::setw(8) << static_cast<unsigned int>(AF.word) << "\tLCDC: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF40&0xFF]) << std::endl
                           << "BC  : " << std::setw(8) <<  static_cast<unsigned int>(BC.word) << "\tSTAT: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF41&0xFF]) << std::endl
@@ -196,15 +196,16 @@ void Processor::ExecuteNextInstruction() {
                           << "IME : " << std::setw(8) <<  static_cast<unsigned int>(interrupt_master_enable) << "\tNA  : " << std::setw(8) <<  0 << std::endl
                           //<< "IMA : " << std::setw(8) <<  0 << "\tROM : " << std::setw(8) <<  static_cast<unsigned int>(mmu->mbc1.rom_bank) << std::endl
                           << "OPC : " << std::setw(8) << static_cast<unsigned int>(memory_value) << std::endl;
-
-	/*if (program_counter.word-1 == 0xCB28 or program_counter.word-1 == 0xCB19 or program_counter.word-1 == 0xCE42 or program_counter.word-1 == 0xD801) {
+*/
+    /*
+	if (program_counter.word-1 == 0xCB28 or program_counter.word-1 == 0xCB19 or program_counter.word-1 == 0xCE42 or program_counter.word-1 == 0xD801) {
 		//while(true) {
             std::cout << "Got it: " << std::hex << static_cast<unsigned int>(program_counter.word-1) << std::endl;
         //}
 	} else {
         //std::cout << "Program counter: " << std::hex << static_cast<unsigned int>(program_counter.word) << std::endl;
-    }*/
-
+    }
+*/
     opcode_map[memory_value]();
 	clock += m_clock;
 	//m_clock = 0;
@@ -438,7 +439,7 @@ void Processor::CPr_h() {uint16_t copy = AF.higher; uint8_t result = AF.higher -
 void Processor::CPr_l() {uint16_t copy = AF.higher; uint8_t result = AF.higher - HL.lower;  AF.lower = (copy-HL.lower <0)?0x50:0x40; if(!result) AF.lower |= 0x80; if((copy & 0xF) < (HL.lower  & 0xF)) AF.lower |= 0x20; m_clock = 1;}
 void Processor::CPr_a() {uint16_t copy = AF.higher; uint8_t result = AF.higher - AF.higher; AF.lower = (copy-AF.higher<0)?0x50:0x40; if(!result) AF.lower |= 0x80; if((copy & 0xF) < (AF.higher & 0xF)) AF.lower |= 0x20; m_clock = 1;}
 void Processor::CPHL() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t result = AF.higher - memory_value; AF.lower = (copy-memory_value<0)?0x50:0x40; if(!result) AF.lower |= 0x80; if((copy & 0xF) < (memory_value & 0xF)) AF.lower |= 0x20; m_clock = 2;}
-void Processor::CPn() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(program_counter.word++); uint8_t result = AF.higher - memory_value; AF.lower = (copy-memory_value<0)?0x50:0x40; if(!AF.higher) AF.lower |= 0x80; if((copy & 0xF) < (memory_value & 0xF)) AF.lower |= 0x20; m_clock = 2;}
+void Processor::CPn() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(program_counter.word++); uint8_t result = AF.higher - memory_value; AF.lower = (copy-memory_value<0)?0x50:0x40; if(!result) AF.lower |= 0x80; if((copy & 0xF) < (memory_value & 0xF)) AF.lower |= 0x20; m_clock = 2;}
 
 // Decimal Adjust register A
 void Processor::DAA() {uint8_t A = AF.higher; if((AF.lower&0x20) or (AF.higher&15 > 9)) AF.higher += 6; AF.lower &= 0xEF; if ((AF.lower&0x20) or (A>0x99)) {AF.higher += 0x60; AF.lower |= 0x10;} m_clock = 1;}

@@ -35,9 +35,10 @@ int main() {
     window.create(sf::VideoMode(160, 144), "GameBoy Emulator");
 
     GameBoy gameboy;
-    //gameboy.LoadGame("TESTGAME.GB");
+    //gameboy.LoadGame("opus5.gb");
     //gameboy.LoadGame("cpu_instrs.gb");
-    gameboy.LoadGame("09-op r,r.gb");
+    //gameboy.LoadGame("09-op r,r.gb");
+    gameboy.LoadGame("01-special.gb");
 	
 	// Tested instructions (just seeing if it crashes)
 	// 01 - Good
