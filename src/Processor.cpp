@@ -185,18 +185,20 @@ void Processor::ExecuteNextInstruction() {
     // LCDC: LCD control register (FF40)
     // STAT: LCD status register (FF41)
     // LY:   LCDC Y-Coordinate which determines which line on the screen is at (0-153, where 144-153 is V-Blank) (FF44)
-/*
-    std::cout << "---------------------------------------------------" << std::endl;
-    std::cout << std::hex << "AF  : " << std::setw(8) << static_cast<unsigned int>(AF.word) << "\tLCDC: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF40&0xFF]) << std::endl
-                          << "BC  : " << std::setw(8) <<  static_cast<unsigned int>(BC.word) << "\tSTAT: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF41&0xFF]) << std::endl
-                          << "DE  : " << std::setw(8) <<  static_cast<unsigned int>(DE.word) << "\tLY  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF44&0xFF]) << std::endl
-                          << "HL  : " << std::setw(8) <<  static_cast<unsigned int>(HL.word) << "\tCNTR: " << std::setw(8) <<  0 << std::endl
-                          << "SP  : " << std::setw(8) <<  static_cast<unsigned int>(stack_pointer.word) << "\tIE  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_enable) << std::endl
-                          << "PC  : " << std::setw(8) <<  static_cast<unsigned int>(program_counter.word-1) << "\tIF  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_flag) << std::endl
-                          << "IME : " << std::setw(8) <<  static_cast<unsigned int>(interrupt_master_enable) << "\tNA  : " << std::setw(8) <<  0 << std::endl
-                          //<< "IMA : " << std::setw(8) <<  0 << "\tROM : " << std::setw(8) <<  static_cast<unsigned int>(mmu->mbc1.rom_bank) << std::endl
-                          << "OPC : " << std::setw(8) << static_cast<unsigned int>(memory_value) << std::endl;
-*/
+	/*static bool after = false;
+	if (program_counter.word-1 == 0xC356 or after) {
+		after = true;
+		std::cout << "---------------------------------------------------" << std::endl;
+		std::cout << std::hex << "AF  : " << std::setw(8) << static_cast<unsigned int>(AF.word) << "\tLCDC: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF40&0xFF]) << std::endl
+							  << "BC  : " << std::setw(8) <<  static_cast<unsigned int>(BC.word) << "\tSTAT: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF41&0xFF]) << std::endl
+							  << "DE  : " << std::setw(8) <<  static_cast<unsigned int>(DE.word) << "\tLY  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF44&0xFF]) << std::endl
+							  << "HL  : " << std::setw(8) <<  static_cast<unsigned int>(HL.word) << "\tCNTR: " << std::setw(8) <<  0 << std::endl
+							  << "SP  : " << std::setw(8) <<  static_cast<unsigned int>(stack_pointer.word) << "\tIE  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_enable) << std::endl
+							  << "PC  : " << std::setw(8) <<  static_cast<unsigned int>(program_counter.word-1) << "\tIF  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_flag) << std::endl
+							  << "IME : " << std::setw(8) <<  static_cast<unsigned int>(interrupt_master_enable) << "\tNA  : " << std::setw(8) <<  0 << std::endl
+							  //<< "IMA : " << std::setw(8) <<  0 << "\tROM : " << std::setw(8) <<  static_cast<unsigned int>(mmu->mbc1.rom_bank) << std::endl
+							  << "OPC : " << std::setw(8) << static_cast<unsigned int>(memory_value) << std::endl;
+	}*/
     /*
 	if (program_counter.word-1 == 0xCB28 or program_counter.word-1 == 0xCB19 or program_counter.word-1 == 0xCE42 or program_counter.word-1 == 0xD801) {
 		//while(true) {
@@ -296,8 +298,8 @@ void Processor::LDrr_hl() {HL.higher = HL.lower;  m_clock = 1;}
 void Processor::LDrr_ha() {HL.higher = AF.higher; m_clock = 1;}
 void Processor::LDrr_lb() {HL.lower  = BC.higher; m_clock = 1;}
 void Processor::LDrr_lc() {HL.lower  = BC.lower;  m_clock = 1;}
-void Processor::LDrr_ld() {HL.lower  = DE.lower;  m_clock = 1;}
-void Processor::LDrr_le() {HL.lower  = DE.higher; m_clock = 1;}
+void Processor::LDrr_ld() {HL.lower  = DE.higher;  m_clock = 1;}
+void Processor::LDrr_le() {HL.lower  = DE.lower; m_clock = 1;}
 void Processor::LDrr_lh() {HL.lower  = HL.higher; m_clock = 1;}
 void Processor::LDrr_ll() {HL.lower  = HL.lower;  m_clock = 1;}
 void Processor::LDrr_la() {HL.lower  = AF.higher; m_clock = 1;}
@@ -382,31 +384,32 @@ void Processor::SWAPr_a() {uint8_t higher_nibble = AF.higher & 0xF0; uint8_t low
 
 // Data Manipulation
 // Add to register or memory
-void Processor::ADDr_b() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(BC.higher); AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + BC.higher & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += BC.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
-void Processor::ADDr_c() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(BC.lower);  AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + BC.lower  & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += BC.lower;  if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
-void Processor::ADDr_d() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(DE.higher); AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + DE.higher & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += DE.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
-void Processor::ADDr_e() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(DE.lower);  AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + DE.lower  & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += DE.lower;  if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
-void Processor::ADDr_h() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(HL.higher); AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + HL.higher & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += HL.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
-void Processor::ADDr_l() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(HL.lower);  AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + HL.lower  & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += HL.lower;  if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
-void Processor::ADDr_a() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(AF.higher); AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + AF.higher & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += AF.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
-void Processor::ADDHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint16_t result = static_cast<uint16_t>(AF.higher) + memory_value; AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + memory_value & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += memory_value; if(!AF.higher) AF.lower |= 0x80; m_clock = 2;}
-void Processor::ADDn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; uint16_t result = static_cast<uint16_t>(AF.higher) + memory_value; AF.lower = (result > 0xFF)?0x10:0x00; if((AF.higher & 0xF + memory_value & 0xF) & 0x10) AF.lower |= 0x20; AF.higher += memory_value; if(!AF.higher) AF.lower |= 0x80; m_clock = 2;}
+void Processor::ADDr_b() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(BC.higher); AF.lower = (result > 0xFF)?0x10:0x00; if(((AF.higher & 0xF) + (BC.higher & 0xF)) & 0x10) AF.lower |= 0x20; AF.higher += BC.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void Processor::ADDr_c() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(BC.lower);  AF.lower = (result > 0xFF)?0x10:0x00; if(((AF.higher & 0xF) + (BC.lower  & 0xF)) & 0x10) AF.lower |= 0x20; AF.higher += BC.lower;  if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void Processor::ADDr_d() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(DE.higher); AF.lower = (result > 0xFF)?0x10:0x00; if(((AF.higher & 0xF) + (DE.higher & 0xF)) & 0x10) AF.lower |= 0x20; AF.higher += DE.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void Processor::ADDr_e() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(DE.lower);  AF.lower = (result > 0xFF)?0x10:0x00; if(((AF.higher & 0xF) + (DE.lower  & 0xF)) & 0x10) AF.lower |= 0x20; AF.higher += DE.lower;  if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void Processor::ADDr_h() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(HL.higher); AF.lower = (result > 0xFF)?0x10:0x00; if(((AF.higher & 0xF) + (HL.higher & 0xF)) & 0x10) AF.lower |= 0x20; AF.higher += HL.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void Processor::ADDr_l() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(HL.lower);  AF.lower = (result > 0xFF)?0x10:0x00; if(((AF.higher & 0xF) + (HL.lower  & 0xF)) & 0x10) AF.lower |= 0x20; AF.higher += HL.lower;  if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void Processor::ADDr_a() {uint16_t result = static_cast<uint16_t>(AF.higher) + static_cast<uint16_t>(AF.higher); AF.lower = (result > 0xFF)?0x10:0x00; if(((AF.higher & 0xF) + (AF.higher & 0xF)) & 0x10) AF.lower |= 0x20; AF.higher += AF.higher; if(!AF.higher) AF.lower |= 0x80; m_clock = 1;}
+void Processor::ADDHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint16_t result = static_cast<uint16_t>(AF.higher) + memory_value; AF.lower = (result > 0xFF)?0x10:0x00; if(((AF.higher & 0xF) + (memory_value & 0xF)) & 0x10) AF.lower |= 0x20; AF.higher += memory_value; if(!AF.higher) AF.lower |= 0x80; m_clock = 2;}
+void Processor::ADDn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; uint16_t result = static_cast<uint16_t>(AF.higher) + memory_value; AF.lower = (result > 0xFF)?0x10:0x00; if(((AF.higher & 0xF) + (memory_value & 0xF)) & 0x10) AF.lower |= 0x20; AF.higher += memory_value; if(!AF.higher) AF.lower |= 0x80; m_clock = 2;}
 void Processor::ADDHLBC() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(BC.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += BC.word; m_clock = 3;}
+//void Processor::ADDHLBC() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(BC.word); AF.lower &= 0x80; if(result > 0xFFFF) {AF.lower |= 0x10;} if(((HL.word & 0xF0) + (BC.word & 0xF0)) & 0x100) {AF.lower |= 0x20;} HL.word += BC.word; m_clock = 2;}
 void Processor::ADDHLDE() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(DE.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += DE.word; m_clock = 3;}
 void Processor::ADDHLHL() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(HL.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += HL.word; m_clock = 3;}
 void Processor::ADDHLSP() {uint32_t result = static_cast<uint32_t>(stack_pointer.word) + static_cast<uint32_t>(HL.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += stack_pointer.word; m_clock = 3;}
 void Processor::ADDSPn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; uint32_t result = static_cast<uint32_t>(memory_value) + static_cast<uint32_t>(stack_pointer.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += stack_pointer.word; m_clock = 4;}
 
 // Add to register or memory then add carry bit
-void Processor::ADCr_b() {uint16_t copy = AF.higher; AF.higher += BC.higher; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+BC.higher>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if ((copy & 0xF + BC.higher & 0xF) & 0x10) AF.lower |= 0x20; m_clock = 1;}
-void Processor::ADCr_c() {uint16_t copy = AF.higher; AF.higher += BC.lower;  AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+BC.lower >0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if ((copy & 0xF + BC.lower  & 0xF) & 0x10) AF.lower |= 0x20; m_clock = 1;}
-void Processor::ADCr_d() {uint16_t copy = AF.higher; AF.higher += DE.higher; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+DE.higher>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if ((copy & 0xF + DE.higher & 0xF) & 0x10) AF.lower |= 0x20; m_clock = 1;}
-void Processor::ADCr_e() {uint16_t copy = AF.higher; AF.higher += DE.lower;  AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+DE.lower >0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if ((copy & 0xF + DE.lower  & 0xF) & 0x10) AF.lower |= 0x20; m_clock = 1;}
-void Processor::ADCr_h() {uint16_t copy = AF.higher; AF.higher += HL.higher; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+HL.higher>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if ((copy & 0xF + HL.higher & 0xF) & 0x10) AF.lower |= 0x20; m_clock = 1;}
-void Processor::ADCr_l() {uint16_t copy = AF.higher; AF.higher += HL.lower;  AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+HL.lower >0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if ((copy & 0xF + HL.lower  & 0xF) & 0x10) AF.lower |= 0x20; m_clock = 1;}
-void Processor::ADCr_a() {uint16_t copy = AF.higher; AF.higher += AF.higher; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+AF.higher>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if ((copy & 0xF + AF.higher & 0xF) & 0x10) AF.lower |= 0x20; m_clock = 1;}
-void Processor::ADCHL() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(HL.word); AF.higher += memory_value; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+memory_value>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if ((copy & 0xF + memory_value & 0xF) & 0x10) AF.lower |= 0x20; m_clock = 2;}
-void Processor::ADCn() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; AF.higher += memory_value; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+memory_value>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if ((copy & 0xF + memory_value & 0xF) & 0x10) AF.lower |= 0x20; m_clock = 2;}
+void Processor::ADCr_b() {uint16_t copy = AF.higher; AF.higher += BC.higher; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+BC.higher>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (BC.higher & 0xF)) & 0x10) AF.lower |= 0x20; m_clock = 1;}
+void Processor::ADCr_c() {uint16_t copy = AF.higher; AF.higher += BC.lower;  AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+BC.lower >0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (BC.lower  & 0xF)) & 0x10) AF.lower |= 0x20; m_clock = 1;}
+void Processor::ADCr_d() {uint16_t copy = AF.higher; AF.higher += DE.higher; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+DE.higher>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (DE.higher & 0xF)) & 0x10) AF.lower |= 0x20; m_clock = 1;}
+void Processor::ADCr_e() {uint16_t copy = AF.higher; AF.higher += DE.lower;  AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+DE.lower >0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (DE.lower  & 0xF)) & 0x10) AF.lower |= 0x20; m_clock = 1;}
+void Processor::ADCr_h() {uint16_t copy = AF.higher; AF.higher += HL.higher; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+HL.higher>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (HL.higher & 0xF)) & 0x10) AF.lower |= 0x20; m_clock = 1;}
+void Processor::ADCr_l() {uint16_t copy = AF.higher; AF.higher += HL.lower;  AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+HL.lower >0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (HL.lower  & 0xF)) & 0x10) AF.lower |= 0x20; m_clock = 1;}
+void Processor::ADCr_a() {uint16_t copy = AF.higher; AF.higher += AF.higher; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+AF.higher>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (AF.higher & 0xF)) & 0x10) AF.lower |= 0x20; m_clock = 1;}
+void Processor::ADCHL() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(HL.word); AF.higher += memory_value; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+memory_value>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (memory_value & 0xF)) & 0x10) AF.lower |= 0x20; m_clock = 2;}
+void Processor::ADCn() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; AF.higher += memory_value; AF.higher += ((AF.lower&0x10)?1:0); AF.lower = (copy+memory_value>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (memory_value & 0xF)) & 0x10) AF.lower |= 0x20; m_clock = 2;}
 
 // Subtract register or memory from A
 void Processor::SUBr_b() {int result = static_cast<int>(AF.higher) - static_cast<int>(BC.higher); AF.lower = (result<0)?0x50:0x40; if((AF.higher & 0xF) < (BC.higher & 0xF)) AF.lower |= 0x20; AF.higher -= BC.higher; if (!AF.higher) AF.lower |= 0x80; m_clock = 1;}
@@ -428,7 +431,7 @@ void Processor::SBCr_h() {uint16_t copy = AF.higher; AF.higher -= HL.higher; AF.
 void Processor::SBCr_l() {uint16_t copy = AF.higher; AF.higher -= HL.lower;  AF.higher -= (AF.lower&0x10)?1:0; AF.lower = (copy-HL.lower <0)?0x50:0x40; if(!AF.higher) AF.lower |= 0x80; if((copy & 0xF) < (HL.lower  & 0xF)) AF.lower |= 0x20; m_clock = 1;}
 void Processor::SBCr_a() {uint16_t copy = AF.higher; AF.higher -= AF.higher; AF.higher -= (AF.lower&0x10)?1:0; AF.lower = (copy-AF.higher<0)?0x50:0x40; if(!AF.higher) AF.lower |= 0x80; if((copy & 0xF) < (AF.higher & 0xF)) AF.lower |= 0x20; m_clock = 1;}
 void Processor::SBCHL() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(HL.word); AF.higher -= memory_value; AF.higher -= (AF.lower&0x10)?1:0; AF.lower = (copy-memory_value<0)?0x50:0x40; if(!AF.higher) AF.lower |= 0x80; if((copy & 0xF) < (memory_value & 0xF)) AF.lower |= 0x20; m_clock = 2;}
-void Processor::SBCn() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(program_counter.word++); AF.higher -= memory_value; AF.higher -= (AF.lower&0x10)?1:0; AF.lower = (copy-memory_value<0)?0x50:0x40; if(!AF.higher) AF.lower |= 0x80; if((copy & 0xF) < (memory_value & 0xF)) AF.lower |= 0x20; m_clock = 2;}
+void Processor::SBCn() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(program_counter.word++); AF.higher -= memory_value; AF.higher -= (AF.lower&0x10)?1:0; AF.lower = (copy<memory_value)?0x50:0x40; if(!AF.higher) AF.lower |= 0x80; if((copy & 0xF) < (memory_value & 0xF)) AF.lower |= 0x20; m_clock = 2;}
 
 // Same as subtraction but results are discarded
 void Processor::CPr_b() {uint16_t copy = AF.higher; uint8_t result = AF.higher - BC.higher; AF.lower = (copy-BC.higher<0)?0x50:0x40; if(!result) AF.lower |= 0x80; if((copy & 0xF) < (BC.higher & 0xF)) AF.lower |= 0x20; m_clock = 1;}
@@ -442,18 +445,75 @@ void Processor::CPHL() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->R
 void Processor::CPn() {uint16_t copy = AF.higher; uint8_t memory_value = mmu->ReadByte(program_counter.word++); uint8_t result = AF.higher - memory_value; AF.lower = (copy-memory_value<0)?0x50:0x40; if(!result) AF.lower |= 0x80; if((copy & 0xF) < (memory_value & 0xF)) AF.lower |= 0x20; m_clock = 2;}
 
 // Decimal Adjust register A
-void Processor::DAA() {uint8_t A = AF.higher; if((AF.lower&0x20) or (AF.higher&15 > 9)) AF.higher += 6; AF.lower &= 0xEF; if ((AF.lower&0x20) or (A>0x99)) {AF.higher += 0x60; AF.lower |= 0x10;} m_clock = 1;}
+//void Processor::DAA() {uint8_t A = AF.higher; if((AF.lower&0x20) or (AF.higher&15 > 9)) AF.higher += 6; AF.lower &= 0x40; if ((AF.lower&0x20) or (A>0x99)) {AF.higher += 0x60; AF.lower |= 0x10;} m_clock = 1;}
+void Processor::DAA() {
+	uint8_t A = AF.higher; 
+	uint8_t F = AF.lower;
+	bool h_flag = F&0x20;
+	bool c_flag = F&0x10;
+	bool n_flag = F&0x40; // Determines if an addition (0) or subtraction (1) occured
+	AF.lower &= 0x40; // N is not affected
+	
+	// DAA for additions last operation
+	if(!n_flag) {
+		// If lower nibble > 9 or H is set
+		bool lower_added = false;
+		if(((A&0x0F) > 9) or h_flag) {
+			AF.higher += 0x06;
+			lower_added = true;
+		}
+		
+		// If upper nibble > 9 or C is set
+		bool upper_added = false;
+		if((((A&0xF0)>>4) > 9) or c_flag) {
+			AF.higher += 0x60; 
+			upper_added = true;
+		}	
+		
+		// If 0x60 was added, set C flag
+		if(upper_added) {
+			AF.lower |= 0x10;
+		}
+	// DAA for subtractions last operation	
+	} else {
+		if (!c_flag and !h_flag) {
+			if (AF.higher <= 0x99) {
+				// Do nothing (C flag is cleared and no values added)
+			}
+		} else if (!c_flag and h_flag) {
+			if ((((A&0xF0)>>4) <= 0x8) and ((A&0x0F) >= 0x6)) {
+				AF.higher += 0xFA;
+			}
+		} else if (c_flag and !h_flag) {
+			if ((((A&0xF0)>>4) >= 0x7) and ((A&0x0F) <= 0x9)) {
+				AF.higher += 0xA0;
+				AF.lower |= 0x10;
+			}
+		} else if (c_flag and h_flag) {
+			if (((((A&0xF0)>>4) == 0x6) or (((A&0xF0)>>4) == 0x7)) and ((A&0x0F) >= 0x6)) {
+				AF.higher += 0x9A;
+				AF.lower |= 0x10;
+			}
+		}
+	}
+	
+	// Set Z if A == 0
+	if(!AF.higher) {
+		AF.lower |= 0x80; 
+	}	
+	m_clock = 1;
+}
 
 // Boolean logic A with register or memory
-void Processor::ANDr_b() {AF.higher &= BC.higher; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::ANDr_c() {AF.higher &= BC.lower ; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::ANDr_d() {AF.higher &= DE.higher; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::ANDr_e() {AF.higher &= DE.lower;  AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::ANDr_h() {AF.higher &= HL.higher; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::ANDr_l() {AF.higher &= HL.lower;  AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::ANDr_a() {AF.higher &= AF.higher; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::ANDHL() {AF.higher &= mmu->ReadByte(HL.word); AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::ANDn() {AF.higher &= mmu->ReadByte(program_counter.word++); AF.lower = AF.higher?0:0x80; m_clock = 1;}
+void Processor::ANDr_b() {AF.higher &= BC.higher; AF.lower = AF.higher?0x20:0xA0; m_clock = 1;}
+void Processor::ANDr_c() {AF.higher &= BC.lower ; AF.lower = AF.higher?0x20:0xA0; m_clock = 1;}
+void Processor::ANDr_d() {AF.higher &= DE.higher; AF.lower = AF.higher?0x20:0xA0; m_clock = 1;}
+void Processor::ANDr_e() {AF.higher &= DE.lower;  AF.lower = AF.higher?0x20:0xA0; m_clock = 1;}
+void Processor::ANDr_h() {AF.higher &= HL.higher; AF.lower = AF.higher?0x20:0xA0; m_clock = 1;}
+void Processor::ANDr_l() {AF.higher &= HL.lower;  AF.lower = AF.higher?0x20:0xA0; m_clock = 1;}
+void Processor::ANDr_a() {AF.higher &= AF.higher; AF.lower = AF.higher?0x20:0xA0; m_clock = 1;}
+void Processor::ANDHL() {AF.higher &= mmu->ReadByte(HL.word); AF.lower = AF.higher?0x20:0xA0; m_clock = 1;}
+void Processor::ANDn() {AF.higher &= mmu->ReadByte(program_counter.word++); AF.lower = AF.higher?0x20:0xA0; m_clock = 1;}
 
 void Processor::ORr_b() {AF.higher |= BC.higher; AF.lower = AF.higher?0:0x80; m_clock = 1;}
 void Processor::ORr_c() {AF.higher |= BC.lower ; AF.lower = AF.higher?0:0x80; m_clock = 1;}
@@ -476,23 +536,23 @@ void Processor::XORHL() {AF.higher ^= mmu->ReadByte(HL.word); AF.lower = AF.high
 void Processor::XORn() {AF.higher ^= mmu->ReadByte(program_counter.word++); AF.lower = AF.higher?0:0x80; m_clock = 1;}
 
 
-void Processor::INCr_b() {uint8_t half = ((BC.higher&0xF+1)&0x10)?0x20:0x00; BC.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= BC.higher?0:0x80; m_clock = 1;}
-void Processor::INCr_c() {uint8_t half = ((BC.lower &0xF+1)&0x10)?0x20:0x00; BC.lower ++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= BC.lower ?0:0x80; m_clock = 1;}
-void Processor::INCr_d() {uint8_t half = ((DE.higher&0xF+1)&0x10)?0x20:0x00; DE.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= DE.higher?0:0x80; m_clock = 1;}
-void Processor::INCr_e() {uint8_t half = ((DE.lower &0xF+1)&0x10)?0x20:0x00; DE.lower ++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= DE.lower ?0:0x80; m_clock = 1;}
-void Processor::INCr_h() {uint8_t half = ((HL.higher&0xF+1)&0x10)?0x20:0x00; HL.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= HL.higher?0:0x80; m_clock = 1;}
-void Processor::INCr_l() {uint8_t half = ((HL.lower &0xF+1)&0x10)?0x20:0x00; HL.lower ++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= HL.lower ?0:0x80; m_clock = 1;}
-void Processor::INCr_a() {uint8_t half = ((AF.higher&0xF+1)&0x10)?0x20:0x00; AF.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= AF.higher?0:0x80; m_clock = 1;}
-void Processor::INCHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t half = ((memory_value&0xF+1)&0x10)?0x20:0x00; memory_value++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= memory_value?0:0x80; mmu->WriteByte(HL.word, memory_value); m_clock = 3;}
+void Processor::INCr_b() {uint8_t half = (((BC.higher&0xF)+1)&0x10)?0x20:0x00; BC.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= BC.higher?0:0x80; m_clock = 1;}
+void Processor::INCr_c() {uint8_t half = (((BC.lower &0xF)+1)&0x10)?0x20:0x00; BC.lower ++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= BC.lower ?0:0x80; m_clock = 1;}
+void Processor::INCr_d() {uint8_t half = (((DE.higher&0xF)+1)&0x10)?0x20:0x00; DE.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= DE.higher?0:0x80; m_clock = 1;}
+void Processor::INCr_e() {uint8_t half = (((DE.lower &0xF)+1)&0x10)?0x20:0x00; DE.lower ++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= DE.lower ?0:0x80; m_clock = 1;}
+void Processor::INCr_h() {uint8_t half = (((HL.higher&0xF)+1)&0x10)?0x20:0x00; HL.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= HL.higher?0:0x80; m_clock = 1;}
+void Processor::INCr_l() {uint8_t half = (((HL.lower &0xF)+1)&0x10)?0x20:0x00; HL.lower ++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= HL.lower ?0:0x80; m_clock = 1;}
+void Processor::INCr_a() {uint8_t half = (((AF.higher&0xF)+1)&0x10)?0x20:0x00; AF.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= AF.higher?0:0x80; m_clock = 1;}
+void Processor::INCHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t half = (((memory_value&0xF)+1)&0x10)?0x20:0x00; memory_value++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= memory_value?0:0x80; mmu->WriteByte(HL.word, memory_value); m_clock = 3;}
 
-void Processor::DECr_b() {uint8_t half = ((BC.higher&0x1F-1)&0x10)?0x00:0x20; BC.higher--; AF.lower &= 0x10; AF.lower |= BC.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_c() {uint8_t half = ((BC.lower &0x1F-1)&0x10)?0x00:0x20; BC.lower --; AF.lower &= 0x10; AF.lower |= BC.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_d() {uint8_t half = ((DE.higher&0x1F-1)&0x10)?0x00:0x20; DE.higher--; AF.lower &= 0x10; AF.lower |= DE.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_e() {uint8_t half = ((DE.lower &0x1F-1)&0x10)?0x00:0x20; DE.lower --; AF.lower &= 0x10; AF.lower |= DE.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_h() {uint8_t half = ((HL.higher&0x1F-1)&0x10)?0x00:0x20; HL.higher--; AF.lower &= 0x10; AF.lower |= HL.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_l() {uint8_t half = ((HL.lower &0x1F-1)&0x10)?0x00:0x20; HL.lower --; AF.lower &= 0x10; AF.lower |= HL.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_a() {uint8_t half = ((AF.higher&0x1F-1)&0x10)?0x00:0x20; AF.higher--; AF.lower &= 0x10; AF.lower |= AF.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t half = ((memory_value&0x1F-1)&0x10)?0x00:0x20; memory_value--; AF.lower &= 0x10; AF.lower |= memory_value?0:0x80; AF.lower |= 0x40; mmu->WriteByte(HL.word, memory_value); m_clock = 3;}
+void Processor::DECr_b() {uint8_t half = (((BC.higher&0x1F)-1)&0x10)?0x00:0x20; BC.higher--; AF.lower &= 0x10; AF.lower |= BC.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_c() {uint8_t half = (((BC.lower &0x1F)-1)&0x10)?0x00:0x20; BC.lower --; AF.lower &= 0x10; AF.lower |= BC.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_d() {uint8_t half = (((DE.higher&0x1F)-1)&0x10)?0x00:0x20; DE.higher--; AF.lower &= 0x10; AF.lower |= DE.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_e() {uint8_t half = (((DE.lower &0x1F)-1)&0x10)?0x00:0x20; DE.lower --; AF.lower &= 0x10; AF.lower |= DE.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_h() {uint8_t half = (((HL.higher&0x1F)-1)&0x10)?0x00:0x20; HL.higher--; AF.lower &= 0x10; AF.lower |= HL.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_l() {uint8_t half = (((HL.lower &0x1F)-1)&0x10)?0x00:0x20; HL.lower --; AF.lower &= 0x10; AF.lower |= HL.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECr_a() {uint8_t half = (((AF.higher&0x1F)-1)&0x10)?0x00:0x20; AF.higher--; AF.lower &= 0x10; AF.lower |= AF.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
+void Processor::DECHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t half = (((memory_value&0x1F)-1)&0x10)?0x00:0x20; memory_value--; AF.lower &= 0x10; AF.lower |= memory_value?0:0x80; AF.lower |= 0x40; mmu->WriteByte(HL.word, memory_value); m_clock = 3;}
  
 void Processor::INCBC() {++BC.word; m_clock = 2;} // Note: z80.js shows as 1 cycle?
 void Processor::INCDE() {++DE.word; m_clock = 2;}
@@ -723,56 +783,56 @@ void Processor::SET7a() {AF.higher |= 0x80; m_clock = 2;}
 void Processor::SET7m() {uint8_t result = mmu->ReadByte(HL.word)|0x80; mmu->WriteByte(HL.word, result); m_clock = 4;}
 
 // Rotate A register Note: Missing Zero flag?
-void Processor::RLA() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = AF.higher << 1 + carry_in; AF.lower = AF.lower&0xEF + carry_out; m_clock = 1;}
-void Processor::RLCA() {uint8_t carry_in = AF.higher&0x80?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = AF.higher << 1 + carry_in; AF.lower = AF.lower&0xEF + carry_out; m_clock = 1;}
-void Processor::RRA() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = AF.higher >> 1 + carry_in; AF.lower = AF.lower&0xEF + carry_out; m_clock = 1;}
-void Processor::RRCA() {uint8_t carry_in = AF.higher&1?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = AF.higher >> 1 + carry_in; AF.lower = AF.lower&0xEF + carry_out; m_clock = 1;}
+void Processor::RLA() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = (AF.higher << 1) + carry_in; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 1;}
+void Processor::RLCA() {uint8_t carry_in = AF.higher&0x80?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = (AF.higher << 1) + carry_in; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 1;}
+void Processor::RRA() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = (AF.higher >> 1) + carry_in; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 1;}
+void Processor::RRCA() {uint8_t carry_in = AF.higher&1?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = (AF.higher >> 1) + carry_in; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 1;}
 
 // Rotate register left
-void Processor::RLr_b() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = BC.higher&0x80?0x10:0; BC.higher = BC.higher << 1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLr_c() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = BC.lower &0x80?0x10:0; BC.lower  = BC.lower  << 1 + carry_in; AF.lower = BC.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLr_d() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = DE.higher&0x80?0x10:0; DE.higher = DE.higher << 1 + carry_in; AF.lower = DE.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLr_e() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = DE.lower &0x80?0x10:0; DE.lower  = DE.lower  << 1 + carry_in; AF.lower = DE.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLr_h() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = HL.higher&0x80?0x10:0; HL.higher = HL.higher << 1 + carry_in; AF.lower = HL.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLr_l() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = HL.lower &0x80?0x10:0; HL.lower  = HL.lower  << 1 + carry_in; AF.lower = HL.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLr_a() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = AF.higher << 1 + carry_in; AF.lower = AF.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = memory_value&0x80?0x10:0; memory_value = memory_value << 1 + carry_in; AF.lower = memory_value?0:0x80; AF.lower = AF.lower&0xEF + carry_out; mmu->WriteByte(HL.word, memory_value); m_clock = 4;}
+void Processor::RLr_b() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = BC.higher&0x80?0x10:0; BC.higher = (BC.higher << 1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLr_c() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = BC.lower &0x80?0x10:0; BC.lower  = (BC.lower  << 1) + carry_in; AF.lower = BC.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLr_d() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = DE.higher&0x80?0x10:0; DE.higher = (DE.higher << 1) + carry_in; AF.lower = DE.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLr_e() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = DE.lower &0x80?0x10:0; DE.lower  = (DE.lower  << 1) + carry_in; AF.lower = DE.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLr_h() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = HL.higher&0x80?0x10:0; HL.higher = (HL.higher << 1) + carry_in; AF.lower = HL.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLr_l() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = HL.lower &0x80?0x10:0; HL.lower  = (HL.lower  << 1) + carry_in; AF.lower = HL.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLr_a() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = (AF.higher << 1) + carry_in; AF.lower = AF.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = memory_value&0x80?0x10:0; memory_value = (memory_value << 1) + carry_in; AF.lower = memory_value?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; mmu->WriteByte(HL.word, memory_value); m_clock = 4;}
 
-void Processor::RLCr_b() {uint8_t carry_in = BC.higher&0x80?1:0; uint8_t carry_out = BC.higher&0x80?0x10:0; BC.higher = BC.higher << 1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLCr_c() {uint8_t carry_in = BC.lower &0x80?1:0; uint8_t carry_out = BC.lower &0x80?0x10:0; BC.lower  = BC.lower  << 1 + carry_in; AF.lower = BC.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLCr_d() {uint8_t carry_in = DE.higher&0x80?1:0; uint8_t carry_out = DE.higher&0x80?0x10:0; DE.higher = DE.higher << 1 + carry_in; AF.lower = DE.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLCr_e() {uint8_t carry_in = DE.lower &0x80?1:0; uint8_t carry_out = DE.lower &0x80?0x10:0; DE.lower  = DE.lower  << 1 + carry_in; AF.lower = DE.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLCr_h() {uint8_t carry_in = HL.higher&0x80?1:0; uint8_t carry_out = HL.higher&0x80?0x10:0; HL.higher = HL.higher << 1 + carry_in; AF.lower = HL.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLCr_l() {uint8_t carry_in = HL.lower &0x80?1:0; uint8_t carry_out = HL.lower &0x80?0x10:0; HL.lower  = HL.lower  << 1 + carry_in; AF.lower = HL.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLCr_a() {uint8_t carry_in = AF.higher&0x80?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = AF.higher << 1 + carry_in; AF.lower = AF.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RLCHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t carry_in = memory_value&0x80?1:0; uint8_t carry_out = memory_value&0x80?0x10:0; memory_value = memory_value << 1 + carry_in; AF.lower = memory_value?0:0x80; AF.lower = AF.lower&0xEF + carry_out; mmu->WriteByte(HL.word, memory_value); m_clock = 4;}
+void Processor::RLCr_b() {uint8_t carry_in = BC.higher&0x80?1:0; uint8_t carry_out = BC.higher&0x80?0x10:0; BC.higher = (BC.higher << 1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLCr_c() {uint8_t carry_in = BC.lower &0x80?1:0; uint8_t carry_out = BC.lower &0x80?0x10:0; BC.lower  = (BC.lower  << 1) + carry_in; AF.lower = BC.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLCr_d() {uint8_t carry_in = DE.higher&0x80?1:0; uint8_t carry_out = DE.higher&0x80?0x10:0; DE.higher = (DE.higher << 1) + carry_in; AF.lower = DE.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLCr_e() {uint8_t carry_in = DE.lower &0x80?1:0; uint8_t carry_out = DE.lower &0x80?0x10:0; DE.lower  = (DE.lower  << 1) + carry_in; AF.lower = DE.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLCr_h() {uint8_t carry_in = HL.higher&0x80?1:0; uint8_t carry_out = HL.higher&0x80?0x10:0; HL.higher = (HL.higher << 1) + carry_in; AF.lower = HL.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLCr_l() {uint8_t carry_in = HL.lower &0x80?1:0; uint8_t carry_out = HL.lower &0x80?0x10:0; HL.lower  = (HL.lower  << 1) + carry_in; AF.lower = HL.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLCr_a() {uint8_t carry_in = AF.higher&0x80?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = (AF.higher << 1) + carry_in; AF.lower = AF.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RLCHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t carry_in = memory_value&0x80?1:0; uint8_t carry_out = memory_value&0x80?0x10:0; memory_value = (memory_value << 1) + carry_in; AF.lower = memory_value?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; mmu->WriteByte(HL.word, memory_value); m_clock = 4;}
 
 // Rotate register right
-void Processor::RRr_b() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = BC.higher >> 1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRr_c() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = BC.lower  >> 1 + carry_in; AF.lower = BC.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRr_d() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = DE.higher&1?0x10:0; DE.higher = DE.higher >> 1 + carry_in; AF.lower = DE.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRr_e() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = DE.lower &1?0x10:0; DE.lower  = DE.lower  >> 1 + carry_in; AF.lower = DE.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRr_h() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = HL.higher&1?0x10:0; HL.higher = HL.higher >> 1 + carry_in; AF.lower = HL.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRr_l() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = HL.lower &1?0x10:0; HL.lower  = HL.lower  >> 1 + carry_in; AF.lower = HL.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRr_a() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = AF.higher >> 1 + carry_in; AF.lower = AF.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = memory_value&1?0x10:0; memory_value = memory_value >> 1 + carry_in; AF.lower = memory_value?0:0x80; AF.lower = AF.lower&0xEF + carry_out; mmu->WriteByte(HL.word, memory_value); m_clock = 4;}
+void Processor::RRr_b() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = (BC.higher >> 1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRr_c() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = (BC.lower  >> 1) + carry_in; AF.lower = BC.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRr_d() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = DE.higher&1?0x10:0; DE.higher = (DE.higher >> 1) + carry_in; AF.lower = DE.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRr_e() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = DE.lower &1?0x10:0; DE.lower  = (DE.lower  >> 1) + carry_in; AF.lower = DE.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRr_h() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = HL.higher&1?0x10:0; HL.higher = (HL.higher >> 1) + carry_in; AF.lower = HL.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRr_l() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = HL.lower &1?0x10:0; HL.lower  = (HL.lower  >> 1) + carry_in; AF.lower = HL.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRr_a() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = (AF.higher >> 1) + carry_in; AF.lower = AF.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = memory_value&1?0x10:0; memory_value = (memory_value >> 1) + carry_in; AF.lower = memory_value?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; mmu->WriteByte(HL.word, memory_value); m_clock = 4;}
 
-void Processor::RRCr_b() {uint8_t carry_in = BC.higher&1?0x80:0; uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = BC.higher >> 1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRCr_c() {uint8_t carry_in = BC.lower &1?0x80:0; uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = BC.lower  >> 1 + carry_in; AF.lower = BC.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRCr_d() {uint8_t carry_in = DE.higher&1?0x80:0; uint8_t carry_out = DE.higher&1?0x10:0; DE.higher = DE.higher >> 1 + carry_in; AF.lower = DE.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRCr_e() {uint8_t carry_in = DE.lower &1?0x80:0; uint8_t carry_out = DE.lower &1?0x10:0; DE.lower  = DE.lower  >> 1 + carry_in; AF.lower = DE.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRCr_h() {uint8_t carry_in = HL.higher&1?0x80:0; uint8_t carry_out = HL.higher&1?0x10:0; HL.higher = HL.higher >> 1 + carry_in; AF.lower = HL.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRCr_l() {uint8_t carry_in = HL.lower &1?0x80:0; uint8_t carry_out = HL.lower &1?0x10:0; HL.lower  = HL.lower  >> 1 + carry_in; AF.lower = HL.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRCr_a() {uint8_t carry_in = AF.higher&1?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = AF.higher >> 1 + carry_in; AF.lower = AF.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::RRCHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t carry_in = memory_value&1?0x80:0; uint8_t carry_out = memory_value&1?0x10:0; memory_value = memory_value >> 1 + carry_in; AF.lower = memory_value?0:0x80; AF.lower = AF.lower&0xEF + carry_out; mmu->WriteByte(HL.word, memory_value); m_clock = 4;}
+void Processor::RRCr_b() {uint8_t carry_in = BC.higher&1?0x80:0; uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = (BC.higher >> 1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRCr_c() {uint8_t carry_in = BC.lower &1?0x80:0; uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = (BC.lower  >> 1) + carry_in; AF.lower = BC.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRCr_d() {uint8_t carry_in = DE.higher&1?0x80:0; uint8_t carry_out = DE.higher&1?0x10:0; DE.higher = (DE.higher >> 1) + carry_in; AF.lower = DE.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRCr_e() {uint8_t carry_in = DE.lower &1?0x80:0; uint8_t carry_out = DE.lower &1?0x10:0; DE.lower  = (DE.lower  >> 1) + carry_in; AF.lower = DE.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRCr_h() {uint8_t carry_in = HL.higher&1?0x80:0; uint8_t carry_out = HL.higher&1?0x10:0; HL.higher = (HL.higher >> 1) + carry_in; AF.lower = HL.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRCr_l() {uint8_t carry_in = HL.lower &1?0x80:0; uint8_t carry_out = HL.lower &1?0x10:0; HL.lower  = (HL.lower  >> 1) + carry_in; AF.lower = HL.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRCr_a() {uint8_t carry_in = AF.higher&1?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = (AF.higher >> 1) + carry_in; AF.lower = AF.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::RRCHL() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t carry_in = memory_value&1?0x80:0; uint8_t carry_out = memory_value&1?0x10:0; memory_value = (memory_value >> 1) + carry_in; AF.lower = memory_value?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; mmu->WriteByte(HL.word, memory_value); m_clock = 4;}
 
-void Processor::SLAr_b() {uint8_t carry_out = BC.higher&0x80?0x10:0; BC.higher = BC.higher << 1; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SLAr_c() {uint8_t carry_out = BC.lower &0x80?0x10:0; BC.lower  = BC.lower  << 1; AF.lower = BC.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SLAr_d() {uint8_t carry_out = DE.higher&0x80?0x10:0; DE.higher = DE.higher << 1; AF.lower = DE.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SLAr_e() {uint8_t carry_out = DE.lower &0x80?0x10:0; DE.lower  = DE.lower  << 1; AF.lower = DE.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SLAr_h() {uint8_t carry_out = HL.higher&0x80?0x10:0; HL.higher = HL.higher << 1; AF.lower = HL.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SLAr_l() {uint8_t carry_out = HL.lower &0x80?0x10:0; HL.lower  = HL.lower  << 1; AF.lower = HL.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SLAr_a() {uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = AF.higher << 1; AF.lower = AF.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
+void Processor::SLAr_b() {uint8_t carry_out = BC.higher&0x80?0x10:0; BC.higher = BC.higher << 1; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SLAr_c() {uint8_t carry_out = BC.lower &0x80?0x10:0; BC.lower  = BC.lower  << 1; AF.lower = BC.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SLAr_d() {uint8_t carry_out = DE.higher&0x80?0x10:0; DE.higher = DE.higher << 1; AF.lower = DE.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SLAr_e() {uint8_t carry_out = DE.lower &0x80?0x10:0; DE.lower  = DE.lower  << 1; AF.lower = DE.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SLAr_h() {uint8_t carry_out = HL.higher&0x80?0x10:0; HL.higher = HL.higher << 1; AF.lower = HL.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SLAr_l() {uint8_t carry_out = HL.lower &0x80?0x10:0; HL.lower  = HL.lower  << 1; AF.lower = HL.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SLAr_a() {uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = AF.higher << 1; AF.lower = AF.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
 
 //void Processor::SLLr_b
 //void Processor::SLLr_c
@@ -782,24 +842,24 @@ void Processor::SLAr_a() {uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher =
 //void Processor::SLLr_l
 //void Processor::SLLr_a
 
-void Processor::SRAr_b() {uint8_t carry_in = BC.higher&0x80; uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = BC.higher>>1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRAr_c() {uint8_t carry_in = BC.lower &0x80; uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = BC.lower >>1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRAr_d() {uint8_t carry_in = DE.higher&0x80; uint8_t carry_out = DE.higher&1?0x10:0; DE.higher = DE.higher>>1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRAr_e() {uint8_t carry_in = DE.lower &0x80; uint8_t carry_out = DE.lower &1?0x10:0; DE.lower  = DE.lower >>1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRAr_h() {uint8_t carry_in = HL.higher&0x80; uint8_t carry_out = HL.higher&1?0x10:0; HL.higher = HL.higher>>1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRAr_l() {uint8_t carry_in = HL.lower &0x80; uint8_t carry_out = HL.lower &1?0x10:0; HL.lower  = HL.lower >>1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRAr_a() {uint8_t carry_in = AF.higher&0x80; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = AF.higher>>1 + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
+void Processor::SRAr_b() {uint8_t carry_in = BC.higher&0x80; uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = (BC.higher>>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRAr_c() {uint8_t carry_in = BC.lower &0x80; uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = (BC.lower >>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRAr_d() {uint8_t carry_in = DE.higher&0x80; uint8_t carry_out = DE.higher&1?0x10:0; DE.higher = (DE.higher>>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRAr_e() {uint8_t carry_in = DE.lower &0x80; uint8_t carry_out = DE.lower &1?0x10:0; DE.lower  = (DE.lower >>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRAr_h() {uint8_t carry_in = HL.higher&0x80; uint8_t carry_out = HL.higher&1?0x10:0; HL.higher = (HL.higher>>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRAr_l() {uint8_t carry_in = HL.lower &0x80; uint8_t carry_out = HL.lower &1?0x10:0; HL.lower  = (HL.lower >>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRAr_a() {uint8_t carry_in = AF.higher&0x80; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = (AF.higher>>1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
 
-void Processor::SRLr_b() {uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = BC.higher>>1; AF.lower = BC.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRLr_c() {uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = BC.lower >>1; AF.lower = BC.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRLr_d() {uint8_t carry_out = DE.higher&1?0x10:0; DE.higher = DE.higher>>1; AF.lower = DE.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRLr_e() {uint8_t carry_out = DE.lower &1?0x10:0; DE.lower  = DE.lower >>1; AF.lower = DE.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRLr_h() {uint8_t carry_out = HL.higher&1?0x10:0; HL.higher = HL.higher>>1; AF.lower = HL.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRLr_l() {uint8_t carry_out = HL.lower &1?0x10:0; HL.lower  = HL.lower >>1; AF.lower = HL.lower ?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
-void Processor::SRLr_a() {uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = AF.higher>>1; AF.lower = AF.higher?0:0x80; AF.lower = AF.lower&0xEF + carry_out; m_clock = 2;}
+void Processor::SRLr_b() {uint8_t carry_out = BC.higher&1?0x10:0; BC.higher = BC.higher>>1; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRLr_c() {uint8_t carry_out = BC.lower &1?0x10:0; BC.lower  = BC.lower >>1; AF.lower = BC.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRLr_d() {uint8_t carry_out = DE.higher&1?0x10:0; DE.higher = DE.higher>>1; AF.lower = DE.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRLr_e() {uint8_t carry_out = DE.lower &1?0x10:0; DE.lower  = DE.lower >>1; AF.lower = DE.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRLr_h() {uint8_t carry_out = HL.higher&1?0x10:0; HL.higher = HL.higher>>1; AF.lower = HL.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRLr_l() {uint8_t carry_out = HL.lower &1?0x10:0; HL.lower  = HL.lower >>1; AF.lower = HL.lower ?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
+void Processor::SRLr_a() {uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = AF.higher>>1; AF.lower = AF.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
 
 // Note: This is a great example of where Nazar's code differs from the documentation. Instead of checking for zero, should just set N and H flags. Need to double check opcodes!!!
-void Processor::CPL() {AF.higher ^= AF.higher; AF.lower |= 0x60; m_clock = 1;}
+void Processor::CPL() {AF.higher ^= 0xFF; AF.lower |= 0x60; m_clock = 1;}
 //void Processor::NEG() {}
 
 // Complement carry flag and Set carry flag
@@ -815,7 +875,7 @@ void Processor::PUSHAF() {--stack_pointer.word; mmu->WriteByte(stack_pointer.wor
 void Processor::POPBC() {BC.lower = mmu->ReadByte(stack_pointer.word++); BC.higher = mmu->ReadByte(stack_pointer.word++); m_clock = 3;}
 void Processor::POPDE() {DE.lower = mmu->ReadByte(stack_pointer.word++); DE.higher = mmu->ReadByte(stack_pointer.word++); m_clock = 3;}
 void Processor::POPHL() {HL.lower = mmu->ReadByte(stack_pointer.word++); HL.higher = mmu->ReadByte(stack_pointer.word++); m_clock = 3;}
-void Processor::POPAF() {AF.lower = mmu->ReadByte(stack_pointer.word++); AF.higher = mmu->ReadByte(stack_pointer.word++); m_clock = 3;}
+void Processor::POPAF() {AF.lower = mmu->ReadByte(stack_pointer.word++)&0xF0; AF.higher = mmu->ReadByte(stack_pointer.word++); m_clock = 3;}
 
 // Jump
 void Processor::JPnn() {program_counter.word = mmu->ReadWord(program_counter.word); m_clock = 3;}
@@ -870,7 +930,8 @@ void Processor::RST60() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWo
 void Processor::NOP() {m_clock = 1;}
 void Processor::HALT() {halt = 1; m_clock = 1;} 
 
-void Processor::DI() {interrupt_master_enable = 0; m_clock = 1;}
-void Processor::EI() {interrupt_master_enable = 1; m_clock = 1;}
+// Todo: Determine if interrupt master or IE is enabled
+void Processor::DI() {interrupt_master_enable = 0; m_clock = 1;} //mmu->interrupt_enable = 0;
+void Processor::EI() {interrupt_master_enable = 1; m_clock = 1;} //mmu->interrupt_enable = 1;
 
 void Processor::MAPcb() {uint8_t memory_value = mmu->ReadByte(program_counter.word++); cb_opcode_map[memory_value]();}
