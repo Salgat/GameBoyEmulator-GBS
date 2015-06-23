@@ -551,14 +551,14 @@ void Processor::INCr_l() {uint8_t half = (((HL.lower &0xF)+1)&0x10)?0x20:0x00; H
 void Processor::INCr_a() {uint8_t half = (((AF.higher&0xF)+1)&0x10)?0x20:0x00; AF.higher++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= AF.higher?0:0x80; m_clock = 1;}
 void Processor::INCHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t half = (((memory_value&0xF)+1)&0x10)?0x20:0x00; memory_value++; AF.lower &= 0x10; AF.lower |= half; AF.lower |= memory_value?0:0x80; mmu->WriteByte(HL.word, memory_value); m_clock = 3;}
 
-void Processor::DECr_b() {uint8_t half = (((BC.higher&0x1F)-1)&0x10)?0x00:0x20; BC.higher--; AF.lower &= 0x10; AF.lower |= BC.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_c() {uint8_t half = (((BC.lower &0x1F)-1)&0x10)?0x00:0x20; BC.lower --; AF.lower &= 0x10; AF.lower |= BC.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_d() {uint8_t half = (((DE.higher&0x1F)-1)&0x10)?0x00:0x20; DE.higher--; AF.lower &= 0x10; AF.lower |= DE.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_e() {uint8_t half = (((DE.lower &0x1F)-1)&0x10)?0x00:0x20; DE.lower --; AF.lower &= 0x10; AF.lower |= DE.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_h() {uint8_t half = (((HL.higher&0x1F)-1)&0x10)?0x00:0x20; HL.higher--; AF.lower &= 0x10; AF.lower |= HL.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_l() {uint8_t half = (((HL.lower &0x1F)-1)&0x10)?0x00:0x20; HL.lower --; AF.lower &= 0x10; AF.lower |= HL.lower ?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECr_a() {uint8_t half = (((AF.higher&0x1F)-1)&0x10)?0x00:0x20; AF.higher--; AF.lower &= 0x10; AF.lower |= AF.higher?0:0x80; AF.lower |= 0x40; m_clock = 1;}
-void Processor::DECHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t half = (((memory_value&0x1F)-1)&0x10)?0x00:0x20; memory_value--; AF.lower &= 0x10; AF.lower |= memory_value?0:0x80; AF.lower |= 0x40; mmu->WriteByte(HL.word, memory_value); m_clock = 3;}
+void Processor::DECr_b() {uint8_t half = (((BC.higher-1)&0xF) == 0xF)?0x20:0x00; BC.higher--; AF.lower &= 0x10; AF.lower |= BC.higher?0:0x80; AF.lower |= 0x40; if(half) AF.lower |= 0x20; m_clock = 1;}
+void Processor::DECr_c() {uint8_t half = (((BC.lower -1)&0xF) == 0xF)?0x20:0x00; BC.lower --; AF.lower &= 0x10; AF.lower |= BC.lower ?0:0x80; AF.lower |= 0x40; if(half) AF.lower |= 0x20; m_clock = 1;}
+void Processor::DECr_d() {uint8_t half = (((DE.higher-1)&0xF) == 0xF)?0x20:0x00; DE.higher--; AF.lower &= 0x10; AF.lower |= DE.higher?0:0x80; AF.lower |= 0x40; if(half) AF.lower |= 0x20; m_clock = 1;}
+void Processor::DECr_e() {uint8_t half = (((DE.lower -1)&0xF) == 0xF)?0x20:0x00; DE.lower --; AF.lower &= 0x10; AF.lower |= DE.lower ?0:0x80; AF.lower |= 0x40; if(half) AF.lower |= 0x20; m_clock = 1;}
+void Processor::DECr_h() {uint8_t half = (((HL.higher-1)&0xF) == 0xF)?0x20:0x00; HL.higher--; AF.lower &= 0x10; AF.lower |= HL.higher?0:0x80; AF.lower |= 0x40; if(half) AF.lower |= 0x20; m_clock = 1;}
+void Processor::DECr_l() {uint8_t half = (((HL.lower -1)&0xF) == 0xF)?0x20:0x00; HL.lower --; AF.lower &= 0x10; AF.lower |= HL.lower ?0:0x80; AF.lower |= 0x40; if(half) AF.lower |= 0x20; m_clock = 1;}
+void Processor::DECr_a() {uint8_t half = (((AF.higher-1)&0xF) == 0xF)?0x20:0x00; AF.higher--; AF.lower &= 0x10; AF.lower |= AF.higher?0:0x80; AF.lower |= 0x40; if(half) AF.lower |= 0x20; m_clock = 1;}
+void Processor::DECHLm() {uint8_t memory_value = mmu->ReadByte(HL.word); uint8_t half = (((BC.higher-1)&0xF) == 0xF)?0x20:0x00; memory_value--; AF.lower &= 0x10; AF.lower |= memory_value?0:0x80; AF.lower |= 0x40; mmu->WriteByte(HL.word, memory_value); if(half) AF.lower |= 0x20; m_clock = 3;}
  
 void Processor::INCBC() {++BC.word; m_clock = 2;} // Note: z80.js shows as 1 cycle?
 void Processor::INCDE() {++DE.word; m_clock = 2;}
@@ -789,10 +789,10 @@ void Processor::SET7a() {AF.higher |= 0x80; m_clock = 2;}
 void Processor::SET7m() {uint8_t result = mmu->ReadByte(HL.word)|0x80; mmu->WriteByte(HL.word, result); m_clock = 4;}
 
 // Rotate A register Note: Missing Zero flag?
-void Processor::RLA() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = (AF.higher << 1) + carry_in; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 1;}
-void Processor::RLCA() {uint8_t carry_in = AF.higher&0x80?1:0; uint8_t carry_out = AF.higher&0x80?0x10:0; AF.higher = (AF.higher << 1) + carry_in; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 1;}
-void Processor::RRA() {uint8_t carry_in = AF.lower&0x10?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = (AF.higher >> 1) + carry_in; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 1;}
-void Processor::RRCA() {uint8_t carry_in = AF.higher&1?0x80:0; uint8_t carry_out = AF.higher&1?0x10:0; AF.higher = (AF.higher >> 1) + carry_in; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 1;}
+void Processor::RLA() {uint8_t carry = (AF.lower&0x10)?1:0; AF.lower = (AF.higher&0x80)?0x10:0; AF.higher = (AF.higher<<1) | carry; m_clock = 1;}
+void Processor::RLCA() {AF.lower = (AF.higher&0x80)?0x10:0; AF.higher = (AF.higher<<1) | (AF.higher>>7); m_clock = 1;}
+void Processor::RRA() {uint8_t carry = (AF.lower&0x10)?0x80:0; AF.lower = (AF.higher&0x1)?0x10:0; AF.higher = (AF.higher>>1) | carry; m_clock = 1;}
+void Processor::RRCA() {AF.lower = (AF.higher&0x1)?0x10:0; AF.higher = (AF.higher>>1) | ((AF.higher&0x1)<<7); m_clock = 1;}
 
 // Rotate register left
 void Processor::RLr_b() {uint8_t carry_in = AF.lower&0x10?1:0; uint8_t carry_out = BC.higher&0x80?0x10:0; BC.higher = (BC.higher << 1) + carry_in; AF.lower = BC.higher?0:0x80; AF.lower = (AF.lower&0xEF) + carry_out; m_clock = 2;}
