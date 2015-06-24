@@ -46,22 +46,9 @@ int main() {
     //gameboy.LoadGame("06-ld r,r.gb");
     //gameboy.LoadGame("07-jr,jp,call,ret,rst.gb");
     //gameboy.LoadGame("08-misc instrs.gb");
-    gameboy.LoadGame("09-op r,r.gb");
+    //gameboy.LoadGame("09-op r,r.gb");
     //gameboy.LoadGame("10-bit ops.gb");
-    //gameboy.LoadGame("11-op a,(hl).gb");
-	
-	// Tested instructions (just seeing if it crashes)
-	// 01 - Good
-	// 02 - Bad (Executing bad opcode)
-	// 03 - Good
-	// 04 - Good
-	// 05 - Good
-	// 06 - Good
-	// 07 - Good
-	// 08 - Good
-	// 09 - Good
-	// 10 - Good
-	// 11 - Good
+    gameboy.LoadGame("11-op a,(hl).gb");
 
     unsigned int count = 0;
 	bool running = true;

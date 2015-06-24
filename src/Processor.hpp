@@ -184,6 +184,7 @@ private:
 	void SWAPr_h();
 	void SWAPr_l();
 	void SWAPr_a();
+	void SWAPHLm();
 
 	// Data Manipulation
 	// Add to register or memory
@@ -577,6 +578,7 @@ private:
 	void SLAr_h();
 	void SLAr_l();
 	void SLAr_a();
+	void SLAHLm();
 
 	//void SLLr_b
 	//void SLLr_c
@@ -593,6 +595,7 @@ private:
 	void SRAr_h();
 	void SRAr_l();
 	void SRAr_a();
+	void SRAHLm();
                  
 	void SRLr_b();
 	void SRLr_c();
@@ -601,6 +604,7 @@ private:
 	void SRLr_h();
 	void SRLr_l();
 	void SRLr_a();
+	void SRLHLm();
 
 	// Note: This is a great example of where Nazar's code differs from the documentation. Instead of checking for zero, should just set N and H flags. Need to double check opcodes!!!
 	void CPL();
