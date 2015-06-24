@@ -175,6 +175,7 @@ private:
 	void LDIOCA();
 
 	void LDHLSPn();
+	void LDSPHL();
 
 	// Swap upper and lower nibbles of register (affects zero flag)
 	void SWAPr_b();

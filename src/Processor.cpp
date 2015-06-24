@@ -86,7 +86,7 @@ Processor::Processor() {
 		// F0                   
 		[this](){return LDAIOn();},		[this](){return POPAF();},		[this](){return LDAIOC();},		[this](){return DI();},
 		[this](){return XX();},			[this](){return PUSHAF();},		[this](){return ORn();},		[this](){return RST30();},
-		[this](){return LDHLSPn();},	[this](){return XX();},			[this](){return LDAmm();},		[this](){return EI();},
+		[this](){return LDHLSPn();},	[this](){return LDSPHL();},		[this](){return LDAmm();},		[this](){return EI();},
 		[this](){return XX();},			[this](){return XX();},			[this](){return CPn();},		[this](){return RST38();}};
 	
 	cb_opcode_map = {
@@ -379,7 +379,25 @@ void Processor::LDIOnA() {mmu->WriteByte(0xFF00 + mmu->ReadByte(program_counter.
 void Processor::LDAIOC() {AF.higher = mmu->ReadByte(0xFF00 + BC.lower); m_clock = 2;}
 void Processor::LDIOCA() {mmu->WriteByte(0xFF00 + BC.lower, AF.higher); m_clock = 2;}
 
-void Processor::LDHLSPn() {HL.word = mmu->ReadWord(stack_pointer.word + mmu->ReadByte(program_counter.word)); ++program_counter.word; m_clock = 3;}
+void Processor::LDHLSPn() {
+    uint8_t memory_value = mmu->ReadByte(program_counter.word++);
+
+    AF.lower = 0x00;
+    if (((stack_pointer.word&0xF) + (memory_value&0xF)) & 0xF0) {
+        AF.lower |= 0x20;
+    }
+    if (((stack_pointer.word&0xFF) + (memory_value&0xFF)) & 0xF00) {
+        AF.lower |= 0x10;
+    }
+
+    HL.word = stack_pointer.word +  memory_value;
+    if (memory_value > 127) {
+        HL.word -= 256;
+    }
+    m_clock = 3;
+}
+
+void Processor::LDSPHL() {stack_pointer.word = HL.word; m_clock = 2;}
 
 // Swap upper and lower nibbles of register (affects zero flag)
 void Processor::SWAPr_b() {uint8_t higher_nibble = BC.higher & 0xF0; uint8_t lower_nibble = BC.higher & 0x0F; BC.higher = (lower_nibble << 4) | (higher_nibble >> 4); AF.lower = (!BC.higher)?0x80:0; m_clock = 2;}
@@ -407,7 +425,23 @@ void Processor::ADDHLBC() {uint32_t result = static_cast<uint32_t>(HL.word) + st
 void Processor::ADDHLDE() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(DE.word); AF.lower &= 0x80; if(result > 0xFFFF) AF.lower |= 0x10; if((HL.word&0xFFF)>(result&0xFFF)) AF.lower |= 0x20; HL.word += DE.word; m_clock = 2;}
 void Processor::ADDHLHL() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(HL.word); AF.lower &= 0x80; if(result > 0xFFFF) AF.lower |= 0x10; if((HL.word&0xFFF)>(result&0xFFF)) AF.lower |= 0x20; HL.word += HL.word; m_clock = 2;}
 void Processor::ADDHLSP() {uint32_t result = static_cast<uint32_t>(HL.word) + static_cast<uint32_t>(stack_pointer.word); AF.lower &= 0x80; if(result > 0xFFFF) AF.lower |= 0x10; if((HL.word&0xFFF)>(result&0xFFF)) AF.lower |= 0x20; HL.word += stack_pointer.word; m_clock = 2;}
-void Processor::ADDSPn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; uint32_t result = static_cast<uint32_t>(memory_value) + static_cast<uint32_t>(stack_pointer.word); if(result > 0xFFFF) AF.lower |= 0x10; else AF.lower &= 0xEF; HL.word += stack_pointer.word; m_clock = 4;} // Double check this one
+void Processor::ADDSPn() {
+    uint8_t memory_value = mmu->ReadByte(program_counter.word++);
+
+    AF.lower = 0x00;
+    if (((stack_pointer.word&0xF) + (memory_value&0xF)) & 0xF0) {
+        AF.lower |= 0x20;
+    }
+    if (((stack_pointer.word&0xFF) + (memory_value&0xFF)) & 0xF00) {
+        AF.lower |= 0x10;
+    }
+
+    stack_pointer.word += memory_value;
+    if (memory_value > 127) {
+        stack_pointer.word -= 256;
+    }
+    m_clock = 3;
+}
 
 // Add to register or memory then add carry bit
 //void Processor::ADCr_b() {uint16_t copy = AF.higher; AF.higher += BC.higher; AF.higher += (AF.lower&0x10)?1:0; AF.lower = (copy+BC.higher>0xFF)?0x10:0; if(!AF.higher) AF.lower |= 0x80; if (((copy & 0xF) + (BC.higher & 0xF) + ((copy+BC.higher>0xFF)?0x10:0)) > 0xF) AF.lower |= 0x20; m_clock = 1;}
