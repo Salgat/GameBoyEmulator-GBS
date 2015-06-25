@@ -30,6 +30,15 @@ void Timer::Reset() {
 }
 
 void Timer::Increment() {
+    if (divider_clock != mmu->zram[0x04]) {
+        divider_clock_tracker = 0;
+    }
+    if (counter_clock != mmu->zram[0x05]) {
+        counter_clock_tracker = 0;
+    }
+    divider_clock = mmu->zram[0x04];
+    counter_clock = mmu->zram[0x05];
+
     auto cycles = cpu->clock - clock; // Difference in clocks
 
     divider_clock_tracker += cycles;
@@ -41,30 +50,34 @@ void Timer::Increment() {
     // If counter is active, increment based on clock select
     if (mmu->ReadByte(0xFF07)&0x04) {
         unsigned int counter_increment_count;
-        if (mmu->ReadByte(0xFF07)&0x03 == 0x0) {
+        if ((mmu->ReadByte(0xFF07)&0x03) == 0x0) {
             counter_increment_count = 256;
-        } else if (mmu->ReadByte(0xFF07)&0x03 == 0x1) {
+        } else if ((mmu->ReadByte(0xFF07)&0x03) == 0x1) {
             counter_increment_count = 4;
-        } else if (mmu->ReadByte(0xFF07)&0x03 == 0x2) {
+        } else if ((mmu->ReadByte(0xFF07)&0x03) == 0x2) {
             counter_increment_count = 16;
         } else {
             counter_increment_count = 64;
         }
 
         counter_clock_tracker += cycles;
-        if (counter_clock_tracker >= counter_increment_count) {
+        if (counter_clock_tracker > counter_increment_count) {
             if (counter_clock == 0xFF) {
                 // Overflow to occur, set interrupt flag
+                std::cout << "Overflow occurred" << std::endl;
                 mmu->interrupt_flag |= 0x04;
+                counter_clock = mmu->ReadByte(0xFF06);
+            } else {
+                ++counter_clock;
             }
-            ++counter_clock;
+
             counter_clock_tracker -= counter_increment_count;
         }
     }
 
     // Also keep track of scanline (0xFF44)
 	scanline_tracker += cycles;
-	if (scanline_tracker > 456/4) {
+	if (scanline_tracker >= 456/4) { // Check if this is >=  or just >
 		++scanline;
         scanline_tracker -= 456/4;
     }

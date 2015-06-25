@@ -28,7 +28,6 @@ void GameBoy::Reset() {
 // Todo: Frame calling v-blank 195-196x per frame??
 sf::Image GameBoy::RenderFrame() {
 	cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
-	int count = 0;
 	do {
 		if (cpu.halt) {
 			cpu.m_clock = 1;
@@ -44,11 +43,11 @@ sf::Image GameBoy::RenderFrame() {
 			cpu.interrupt_master_enable = 0;
 			uint8_t interrupt_fired = mmu.interrupt_enable & if_memory_value;
 
-            if (interrupt_fired & 1) {if_memory_value &= 0XFE; cpu.RST40();}
-			else if (interrupt_fired & 2) {if_memory_value &= 0XFD; cpu.RST48();}
-			else if (interrupt_fired & 4) {if_memory_value &= 0XFB; cpu.RST50();}
-			else if (interrupt_fired & 8) {if_memory_value &= 0XF7; cpu.RST58();}
-			else if (interrupt_fired & 16) {if_memory_value &= 0XEF; cpu.RST60();}
+            if (interrupt_fired & 0x01) { std::cout << "V-Blank triggered" << std::endl; if_memory_value &= 0XFE; cpu.RST40();}
+			else if (interrupt_fired & 0x02) {if_memory_value &= 0XFD; cpu.RST48();}
+			else if (interrupt_fired & 0x04) { std::cout << "Timer triggered!" << std::endl; if_memory_value &= 0XFB; cpu.RST50();}
+			else if (interrupt_fired & 0x08) {if_memory_value &= 0XF7; cpu.RST58();}
+			else if (interrupt_fired & 0x10) {if_memory_value &= 0XEF; cpu.RST60();}
 			else {cpu.interrupt_master_enable = 1;}
 			
 			mmu.WriteByte(0xFF0F, if_memory_value);
@@ -59,6 +58,7 @@ sf::Image GameBoy::RenderFrame() {
 		
 		timer.Increment();
 	} while(cpu.clock < cpu.frame_clock);
+
 	
 	return display.RenderFrame();
 }

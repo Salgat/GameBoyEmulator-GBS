@@ -345,7 +345,13 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                                         zram[address&0xFF] = value; break;
 										
 									case 4: case 5: case 6: case 7:
-										zram[address&0xFF] = value; break;
+										if (address == 0xFF04) {
+                                            zram[address&0xFF] = 0;
+                                        } else {
+                                           // std::cout << "Writing value to address: " << std::hex << static_cast<unsigned int>(value) << " to " << static_cast<unsigned int>(address) << std::endl;
+                                            zram[address&0xFF] = value;
+                                        }
+                                        break;
 										
 									case 15:
 										interrupt_flag = value; break;

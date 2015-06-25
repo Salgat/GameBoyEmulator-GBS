@@ -39,8 +39,8 @@ int main() {
     //gameboy.LoadGame("cpu_instrs.gb");
 
     //gameboy.LoadGame("01-special.gb");
-    //gameboy.LoadGame("02-interrupts.gb");
-    gameboy.LoadGame("03-op sp,hl.gb"); // Causes errors running the wrong opcode
+    gameboy.LoadGame("02-interrupts.gb");
+    //gameboy.LoadGame("03-op sp,hl.gb"); // Causes errors running the wrong opcode
     //gameboy.LoadGame("04-op r,imm.gb");
     //gameboy.LoadGame("05-op rp.gb");
     //gameboy.LoadGame("06-ld r,r.gb");
