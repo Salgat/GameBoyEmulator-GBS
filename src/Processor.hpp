@@ -642,7 +642,7 @@ private:
 	void JRCn();
                
 	// Note: This should be "STOP", but implementation is a conditional jump if B register is decremented and > 0?
-	void DJNZn();
+	void STOP();
 
 	// Note: 5 instead of 3 cycles? Need to see the extra 2 cycles are true or just an implementation rule
 	void CALLnn();

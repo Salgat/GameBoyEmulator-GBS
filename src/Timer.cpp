@@ -64,7 +64,6 @@ void Timer::Increment() {
         if (counter_clock_tracker > counter_increment_count) {
             if (counter_clock == 0xFF) {
                 // Overflow to occur, set interrupt flag
-                std::cout << "Overflow occurred" << std::endl;
                 mmu->interrupt_flag |= 0x04;
                 counter_clock = mmu->ReadByte(0xFF06);
             } else {

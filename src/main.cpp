@@ -40,7 +40,7 @@ int main() {
 
     //gameboy.LoadGame("01-special.gb");
     gameboy.LoadGame("02-interrupts.gb");
-    //gameboy.LoadGame("03-op sp,hl.gb"); // Causes errors running the wrong opcode
+    //gameboy.LoadGame("03-op sp,hl.gb");
     //gameboy.LoadGame("04-op r,imm.gb");
     //gameboy.LoadGame("05-op rp.gb");
     //gameboy.LoadGame("06-ld r,r.gb");
@@ -49,6 +49,9 @@ int main() {
     //gameboy.LoadGame("09-op r,r.gb");
     //gameboy.LoadGame("10-bit ops.gb");
     //gameboy.LoadGame("11-op a,(hl).gb");
+
+    //gameboy.LoadGame("instr_timing.gb");
+    //gameboy.LoadGame("01-read_timing.gb");
 
     unsigned int count = 0;
 	bool running = true;

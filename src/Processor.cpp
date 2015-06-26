@@ -14,7 +14,7 @@ Processor::Processor() {
 		[this](){return LDmmSP();},		[this](){return ADDHLBC();},	[this](){return LDABCm();},		[this](){return DECBC();},
 		[this](){return INCr_c();},		[this](){return DECr_c();},		[this](){return LDrn_c();},		[this](){return RRCA();},
 		// 10                   
-		[this](){return DJNZn();},		[this](){return LDDEnn();},		[this](){return LDDEmA();},		[this](){return INCDE();},
+		[this](){return STOP();},		[this](){return LDDEnn();},		[this](){return LDDEmA();},		[this](){return INCDE();},
 		[this](){return INCr_d();},		[this](){return DECr_d();},		[this](){return LDrn_d();},		[this](){return RLA();},
 		[this](){return JRn();},		[this](){return ADDHLDE();},	[this](){return LDADEm();},		[this](){return DECDE();},
 		[this](){return INCr_e();},		[this](){return DECr_e();},		[this](){return LDrn_e();},		[this](){return RRA();},
@@ -185,8 +185,8 @@ void Processor::ExecuteNextInstruction() {
     // LCDC: LCD control register (FF40)
     // STAT: LCD status register (FF41)
     // LY:   LCDC Y-Coordinate which determines which line on the screen is at (0-153, where 144-153 is V-Blank) (FF44)
-	static bool after = false;
-	if (program_counter.word-1 == 0xC317 or after) {
+	/*static bool after = false;
+	if (program_counter.word-1 == 0xC2B5 or after) {
 		after = true;
 		std::cout << "---------------------------------------------------" << std::endl;
 		std::cout << std::hex << "AF  : " << std::setw(8) << static_cast<unsigned int>(AF.word) << "\tLCDC: " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF40&0xFF]) << std::endl
@@ -195,10 +195,10 @@ void Processor::ExecuteNextInstruction() {
 							  << "HL  : " << std::setw(8) <<  static_cast<unsigned int>(HL.word) << "\tCNTR: " << std::setw(8) <<  0 << std::endl
 							  << "SP  : " << std::setw(8) <<  static_cast<unsigned int>(stack_pointer.word) << "\tIE  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_enable) << std::endl
 							  << "PC  : " << std::setw(8) <<  static_cast<unsigned int>(program_counter.word-1) << "\tIF  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_flag) << std::endl
-							  << "IME : " << std::setw(8) <<  static_cast<unsigned int>(interrupt_master_enable) << "\tNA  : " << std::setw(8) <<  0 << std::endl
+							  << "IME : " << std::setw(8) <<  static_cast<unsigned int>(interrupt_master_enable) << "\tCLK : " << std::setw(8) <<  static_cast<unsigned int>(clock) << std::endl
 							  << "TIMA: " << std::setw(8) << static_cast<unsigned int>(mmu->zram[0xFF05&0xFF]) << "\tTAC : " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF07&0xFF]) << std::endl
 							  << "OPC : " << std::setw(8) << static_cast<unsigned int>(memory_value) << std::endl;
-	}
+	}*/
     /*
 	if (program_counter.word-1 == 0xCB28 or program_counter.word-1 == 0xCB19 or program_counter.word-1 == 0xCE42 or program_counter.word-1 == 0xD801) {
 		//while(true) {
@@ -908,18 +908,14 @@ void Processor::JPNCnn() {m_clock = 3; if (!(AF.lower&0x10)) {program_counter.wo
 void Processor::JPCnn() {m_clock = 3; if (AF.lower&0x10) {program_counter.word = mmu->ReadWord(program_counter.word); ++m_clock;} else program_counter.word+=2;}
 
 // Jump by adding signed value to program counter (make sure the conversion with int16_t is right!!!!!!!!)
-//void Processor::JRn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; program_counter.word += memory_value; ++m_clock;}
 void Processor::JRn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}
 void Processor::JRNZn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; if(!(AF.lower&0x80)) {program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}}
-//void Processor::JRZn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(AF.lower&0x80) {program_counter.word += memory_value; ++m_clock;}}
 void Processor::JRZn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; if(AF.lower&0x80) {program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}}
-//void Processor::JRNCn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(!(AF.lower&0x10)) {program_counter.word += memory_value; ++m_clock;}}
 void Processor::JRNCn()  {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; if(!(AF.lower&0x10)) {program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}}
-//void Processor::JRCn() {int16_t memory_value = mmu->ReadByte(program_counter.word); if (memory_value > 127) memory_value-=(~memory_value+1); ++program_counter.word; m_clock = 2; if(AF.lower&0x10) {program_counter.word += memory_value; ++m_clock;}}
 void Processor::JRCn() {uint8_t memory_value = mmu->ReadByte(program_counter.word); ++program_counter.word; m_clock = 2; if(AF.lower&0x10) {program_counter.word += memory_value; if (memory_value > 127) program_counter.word -= 256; ++m_clock;}}
 
-// Note: This should be "STOP", but implementation is a conditional jump if B register is decremented and > 0?
-void Processor::DJNZn() {}
+// Todo: Implement this
+void Processor::STOP() {}
 
 // Note: 5 instead of 3 cycles? Need to see the extra 2 cycles are true or just an implementation rule
 void Processor::CALLnn() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word+2); program_counter.word = mmu->ReadWord(program_counter.word); m_clock = 5;}
@@ -929,28 +925,28 @@ void Processor::CALLNCnn() {m_clock = 3; if (!(AF.lower&0x10)) {stack_pointer.wo
 void Processor::CALLCnn() {m_clock = 3; if (AF.lower&0x10) {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word+2); program_counter.word = mmu->ReadWord(program_counter.word); m_clock += 2;} else program_counter.word += 2;}
 
 void Processor::RET() {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock = 3;}
-void Processor::RETI() {interrupt_master_enable = 1; InterruptReturn(); program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock = 3;}
+void Processor::RETI() {interrupt_master_enable = 1; program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock = 3;} // InterruptReturn();  removed this?
 void Processor::RETNZ() {m_clock = 1; if(!(AF.lower&0x80)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
-void Processor::RETZ() {m_clock = 1; if(!(AF.lower&0x80)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
+void Processor::RETZ() {m_clock = 1; if((AF.lower&0x80)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
 void Processor::RETNC() {m_clock = 1; if(!(AF.lower&0x10)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
-void Processor::RETC() {m_clock = 1; if(!(AF.lower&0x10)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
+void Processor::RETC() {m_clock = 1; if((AF.lower&0x10)) {program_counter.word = mmu->ReadWord(stack_pointer.word); stack_pointer.word += 2; m_clock += 2;}}
 
-void Processor::RST00() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x00; m_clock = 3;}
-void Processor::RST08() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x08; m_clock = 3;}
-void Processor::RST10() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x10; m_clock = 3;}
-void Processor::RST18() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x18; m_clock = 3;}
-void Processor::RST20() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x20; m_clock = 3;}
-void Processor::RST28() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x28; m_clock = 3;}
-void Processor::RST30() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x30; m_clock = 3;}
-void Processor::RST38() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x38; m_clock = 3;}
-void Processor::RST40() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x40; m_clock = 3;}
-void Processor::RST48() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x48; m_clock = 3;}
-void Processor::RST50() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x50; m_clock = 3;}
-void Processor::RST58() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x58; m_clock = 3;}
-void Processor::RST60() {InterruptStore(); stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x60; m_clock = 3;}
+void Processor::RST00() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x00; m_clock = 3;}
+void Processor::RST08() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x08; m_clock = 3;}
+void Processor::RST10() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x10; m_clock = 3;}
+void Processor::RST18() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x18; m_clock = 3;}
+void Processor::RST20() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x20; m_clock = 3;}
+void Processor::RST28() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x28; m_clock = 3;}
+void Processor::RST30() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x30; m_clock = 3;}
+void Processor::RST38() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x38; m_clock = 3;}
+void Processor::RST40() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x40; m_clock = 3;}
+void Processor::RST48() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x48; m_clock = 3;}
+void Processor::RST50() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x50; m_clock = 3;}
+void Processor::RST58() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x58; m_clock = 3;}
+void Processor::RST60() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x60; m_clock = 3;}
 
 void Processor::NOP() {m_clock = 1;}
-void Processor::HALT() {halt = 1; m_clock = 1;} 
+void Processor::HALT() {if (!interrupt_master_enable) {program_counter.word +=1;} else halt = 1; m_clock = 1;}
 
 // Todo: Determine if interrupt master or IE is enabled
 void Processor::DI() {interrupt_master_enable = 0; m_clock = 1;} //mmu->interrupt_enable = 0;
