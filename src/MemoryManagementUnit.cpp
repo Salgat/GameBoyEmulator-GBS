@@ -2,6 +2,7 @@
 // Created by Austin on 6/11/2015.
 //
 #include "MemoryManagementUnit.hpp"
+#include "Input.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -34,21 +35,18 @@ void MemoryManagementUnit::LoadRom(std::string rom_name) {
     char byte;
     std::size_t index = 0;
     while(input.get(byte)) {
-		//std::cout << "Input from ROM: " << static_cast<unsigned int>(static_cast<uint8_t>(byte)) << std::endl;
         cartridge_rom[index++] = static_cast<uint8_t>(byte);
     }
 
     // Copy over relevant cartridge memory to rom read-only section
     for (index = 0; index < 0x8000; ++index) {
         rom[index] = cartridge_rom[index];
-		//std::cout << "rom value at index: " << static_cast<unsigned int>(rom[index]) << ", " << index << std::endl;
     }
-	
-	//std::cout << "ROM size: " << cartridge_rom.size() << std::endl;
 }
 
-void MemoryManagementUnit::Initialize(Processor* cpu_) {
+void MemoryManagementUnit::Initialize(Processor* cpu_, Input* input_) {
     cpu = cpu_;
+    input = input_;
 }
 
 void MemoryManagementUnit::Reset() {
@@ -130,8 +128,6 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
                 if (address < 0x0100) {
                     return bios[address];
                 } else if (cpu->program_counter.word == 0x0100) {
-                    // BIOS has reached the final instruction and memory can go back to normal mode
-					std::cout << "Setting bios to false" << std::endl;
                     bios_mode = false;
                 } else {
                     return rom[address];
@@ -200,9 +196,8 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
                             case 0x00:
                                 switch (address & 0xF) {
                                     // 0xFF00: Joystick
-									// Todo: Add interrupt support
-									case 0: 
-										return zram[address&0xFF];
+									case 0:
+                                        return input->ReadByte();
 									
 									// Timers
 									case 4: case 5: case 6: case 7:
@@ -218,8 +213,6 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
 								return 0;
 								
 							case 0x40: case 0x50: case 0x60: case 0x70:
-							
-								//std::cout << "Reading zram address and value: " << static_cast<unsigned int>(address) << ", " << static_cast<unsigned int>(zram[address&0xFF]) << std::endl;
 								return zram[address&0xFF];
 						}
                     }
@@ -238,10 +231,6 @@ uint16_t MemoryManagementUnit::ReadWord(uint16_t address) {
  * Writes a single byte to memory.
  */
 void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
-    if (address == 0x9800) {
-        //std::cout << "Writing to 0x9800: " << std::hex << static_cast<unsigned int>(value) << std::endl;
-    }
-
     switch(address & 0xF000) {
         // ROM Bank 0
         case 0x0000:
@@ -295,8 +284,6 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
         // VRAM
         case 0x8000:
         case 0x9000:
-            //if (address >= 0x9000)
-            //    std::cout << "Writing to address with value for pc: " << std::hex << static_cast<unsigned int>(address) << ", " << static_cast<unsigned int>(value) << ", " << static_cast<unsigned int>(cpu->program_counter.word) << std::endl;
             vram[address & 0x1FFF] = value;
             break;
 
@@ -342,13 +329,13 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                             case 0x00:
                                 switch(address & 0xF) {
                                     case 0:
-                                        zram[address&0xFF] = value; break;
+                                        input->WriteByte(value);
+                                        break;
 										
 									case 4: case 5: case 6: case 7:
 										if (address == 0xFF04) {
                                             zram[address&0xFF] = 0;
                                         } else {
-                                           // std::cout << "Writing value to address: " << std::hex << static_cast<unsigned int>(value) << " to " << static_cast<unsigned int>(address) << std::endl;
                                             zram[address&0xFF] = value;
                                         }
                                         break;
@@ -362,7 +349,6 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
 								break;
 								
 							case 0x40: case 0x50: case 0x60: case 0x70:
-								//std::cout << "Writing to zram address and value: " << static_cast<unsigned int>(address) << ", " << static_cast<unsigned int>(value) << std::endl;
 								zram[address&0xFF] = value; break;
                         }
                     }

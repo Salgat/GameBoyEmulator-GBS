@@ -11,10 +11,13 @@
 #include <SFML/Network.hpp>
 #include <SFML/System.hpp>
 
+#include <Utility>
+
 #include "Processor.hpp"
 #include "MemoryManagementUnit.hpp"
 #include "Display.hpp"
 #include "Timer.hpp"
+#include "Input.hpp"
 
 /**
  * Emulates a GameBoy, outputting visuals to an sf::Image (160x144 pixels)
@@ -25,7 +28,7 @@ public:
     //~GameBoy();
 
     void Reset();
-    sf::Image RenderFrame();
+    std::pair<sf::Image, bool> RenderFrame(sf::RenderWindow& window);
     void LoadGame(std::string rom_name);
 
 //private:
@@ -35,6 +38,7 @@ public:
     MemoryManagementUnit mmu;
     Display display;
     Timer timer;
+    Input input;
 };
 
 #endif //GAMEBOYEMULATOR_GAMEBOY_HPP

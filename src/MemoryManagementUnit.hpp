@@ -18,6 +18,7 @@ struct MemoryBankController {
 };
 
 class Processor;
+class Input;
 
 class MemoryManagementUnit {
 public:
@@ -42,7 +43,7 @@ public:
 
     MemoryManagementUnit();
 
-    void Initialize(Processor* cpu_);
+    void Initialize(Processor* cpu_, Input* input_);
     void Reset();
     void LoadRom(std::string rom_name);
 
@@ -54,6 +55,7 @@ public:
 
 private:
     Processor* cpu;
+    Input* input;
 
 };
 

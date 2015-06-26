@@ -8,10 +8,11 @@
 
 GameBoy::GameBoy() {
     cpu.Initialize(&mmu);
-    mmu.Initialize(&cpu);
+    mmu.Initialize(&cpu, &input);
     display.Initialize(&cpu, &mmu);
     timer.Initialize(&cpu, &mmu);
-	
+	input.Initialize(&mmu);
+
 	Reset();
 }
 
@@ -26,9 +27,11 @@ void GameBoy::Reset() {
 }
 
 // Todo: Frame calling v-blank 195-196x per frame??
-sf::Image GameBoy::RenderFrame() {
+std::pair<sf::Image, bool> GameBoy::RenderFrame(sf::RenderWindow& window) {
 	cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
+    bool running = true;
 	do {
+        if(!input.PollEvents(window)) running = false;
         if (cpu.halt) {
             cpu.m_clock = 1;
         } else {
@@ -38,11 +41,7 @@ sf::Image GameBoy::RenderFrame() {
         cpu.m_clock = 0;
 
         uint8_t if_memory_value = mmu.ReadByte(0xFF0F);
-        //if (cpu.clock > 0xc2b5) {
-        //std::cout << "mmu.interrupt_enable, master enable, if flags, clock: " << std::hex << static_cast<unsigned int>(mmu.interrupt_enable) << ", " << static_cast<unsigned int>(cpu.interrupt_master_enable) << ", " << static_cast<unsigned int>(if_memory_value) << ", " << static_cast<unsigned int>(cpu.clock) << std::endl;
-        //}
         if (mmu.interrupt_enable and cpu.interrupt_master_enable and if_memory_value) {
-			//std::cout << "Interrupt triggered" << std::endl;
 			cpu.halt = 0;
 			cpu.interrupt_master_enable = 0;
 			uint8_t interrupt_fired = mmu.interrupt_enable & if_memory_value;
@@ -65,5 +64,5 @@ sf::Image GameBoy::RenderFrame() {
 	} while(cpu.clock < cpu.frame_clock);
 
 	
-	return display.RenderFrame();
+	return std::make_pair(display.RenderFrame(), running);
 }

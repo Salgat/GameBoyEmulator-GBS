@@ -6,18 +6,6 @@
 
 sf::RenderWindow window;
 
-bool PollEvents() {
-    sf::Event event;
-    while (window.pollEvent(event)) {
-        if (event.type == sf::Event::Closed) {
-            window.close();
-			return false;
-		}	
-    }
-	
-	return true;
-}
-
 void DrawFrame(sf::Image const& frame) {
     window.clear(sf::Color::Green);
 
@@ -36,10 +24,11 @@ int main() {
 
     GameBoy gameboy;
     //gameboy.LoadGame("opus5.gb");
+    gameboy.LoadGame("Tetris.gb");
     //gameboy.LoadGame("cpu_instrs.gb");
 
     //gameboy.LoadGame("01-special.gb");
-    gameboy.LoadGame("02-interrupts.gb");
+    //gameboy.LoadGame("02-interrupts.gb");
     //gameboy.LoadGame("03-op sp,hl.gb");
     //gameboy.LoadGame("04-op r,imm.gb");
     //gameboy.LoadGame("05-op rp.gb");
@@ -56,15 +45,10 @@ int main() {
     unsigned int count = 0;
 	bool running = true;
     while(running) {
-		//std::cout << "Processing Frame" << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
-		//std::cout << "Polling events" << std::endl;
-        running = PollEvents();
-		//std::cout << "Rendering frame" << std::endl;
-        sf::Image frame = gameboy.RenderFrame();
-		//std::cout << "Drawing frame" << std::endl;
-        DrawFrame(frame);
-
+        auto result = gameboy.RenderFrame(window);
+        DrawFrame(result.first);
+        running = result.second;
         auto end = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double, std::milli> elapsed = end-start;
@@ -72,23 +56,6 @@ int main() {
         if (sleep_time > std::chrono::duration<double, std::milli>(0)) {
             std::this_thread::sleep_for(sleep_time);
         }
-
-        // Debugging
-        /*if (++count > 120) {
-            count = 0;
-
-            std::cout << "VRAM 0x8700: " << std::endl;
-            for (unsigned int index = 0; index < 16; ++index) {
-                std::cout << std::hex << static_cast<unsigned int>(gameboy.mmu.ReadByte(0x8700+index)) << std::endl;
-            }
-
-            std::cout << "0xFF42 and 0xFF43: " << std::hex << static_cast<unsigned int>(gameboy.mmu.ReadByte(0xFF42)) << ", " << static_cast<unsigned int>(gameboy.mmu.ReadByte(0xFF43)) << std::endl;
-
-            std::cout << "VRAM 0x9800: " << std::endl;
-            for (unsigned int index = 0; index < 9; ++index) {
-                std::cout << std::hex << static_cast<unsigned int>(gameboy.mmu.ReadByte(0x9800+index)) << std::endl;
-            }
-        }*/
     }
 
 	std::cout << "Exit Emulator" << std::endl;
