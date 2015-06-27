@@ -50,6 +50,8 @@ sf::Image Display::RenderFrame() {
         }
     }
 
+    //std::cout << "Palette data, value for bit: " << std::hex << static_cast<unsigned int>(mmu->zram[0x47]) << std::endl;
+
     return frame;
 }
 
@@ -64,7 +66,7 @@ void Display::RenderScanline(uint8_t line_number) {
     }
 
     // Then draw Window
-    
+
 }
 
 void Display::DrawBackground(uint8_t lcd_control, uint8_t line_number) {
@@ -119,17 +121,50 @@ void Display::DrawTilePattern(std::vector<sf::Color>& background_map, std::size_
             color = 3;
         }
 
-        // TODO: Palette translation
+        // Create a palette conversion
+        uint8_t palette = mmu->zram[0x47];
+        sf::Color white;
+        sf::Color light_gray;
+        sf::Color dark_gray;
+        sf::Color black;
+        //std::cout << "New palette" << std::endl;
+        for (uint8_t bits = 0; bits < 7; bits+=2) {
+            uint8_t bit0 = (palette & (1<<bits))>>bits;
+            uint8_t bit1 = (palette & (1<<(bits+1)))>>(bits+1);
+            uint8_t value = bit0 + (bit1 << 1);
+            //std::cout << "Palette data, value for bit: " << std::hex << static_cast<unsigned int>(palette) << ", " << static_cast<unsigned int>(value) << ", " << static_cast<unsigned int>(bits) << std::endl;
+            sf::Color new_color;
+            if (value == 0x00) {
+                new_color = kBlack;
+            } else if (value == 0x01) {
+                new_color = kDarkGray;
+            } else if (value == 0x02) {
+                new_color = kLightGray;
+            } else if (value == 0x03) {
+                new_color = kWhite;
+            }
+
+            if (bits == 0) {
+                black = new_color;
+            } else if (bits == 2) {
+                dark_gray = new_color;
+            } else if (bits == 4) {
+                light_gray = new_color;
+            } else if (bits == 6) {
+                white = new_color;
+            }
+        }
+
         std::size_t x_pixel = x*8 + 7-bit;
         std::size_t y_pixel = (y*8+tile_x);
         if (color == 0) {
-            background_map[y_pixel*256+x_pixel] = kWhite;
+            background_map[y_pixel*256+x_pixel] = white;
         } else if (color == 1) {
-            background_map[y_pixel*256+x_pixel] = kLightGray;
+            background_map[y_pixel*256+x_pixel] = light_gray;
         } else if (color == 2) {
-            background_map[y_pixel*256+x_pixel] = kDarkGray;
+            background_map[y_pixel*256+x_pixel] = dark_gray;
         } else {
-            background_map[y_pixel*256+x_pixel] = kBlack;
+            background_map[y_pixel*256+x_pixel] = black;
         }
     }
 }

@@ -231,6 +231,10 @@ uint16_t MemoryManagementUnit::ReadWord(uint16_t address) {
  * Writes a single byte to memory.
  */
 void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
+    if ((address&0x47) and value == 0) {
+        //std::cout << "Writing to 0xFF47 value: " << std::hex << static_cast<unsigned int>(value) << " at address " << static_cast<unsigned int>(address) << std::endl;
+    }
+
     switch(address & 0xF000) {
         // ROM Bank 0
         case 0x0000:
@@ -323,10 +327,15 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                     if (address == 0xFFFF) {
                         interrupt_enable = value;
                     } else if (address > 0xFF7F) {
-                        zram[address & 0x7F] = value;
+                        // TODO: There is a bug here where there is some overlap in writing to zram, need to seperate these two
+                        if ((address & 0x7F) != 0x47)
+                            zram[address & 0x7F] = value;
                     } else {
                         switch(address & 0xF0) {
                             case 0x00:
+                                if ((address&0x47) and value == 0) {
+                                    //std::cout << "Writing to 0xFF47 value2: " << std::hex << static_cast<unsigned int>(value) << " at address " << static_cast<unsigned int>(address & 0xF) << std::endl;
+                                }
                                 switch(address & 0xF) {
                                     case 0:
                                         input->WriteByte(value);
@@ -349,6 +358,9 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
 								break;
 								
 							case 0x40: case 0x50: case 0x60: case 0x70:
+                                if ((address&0x47) and value == 0) {
+                                    //std::cout << "Writing to 0xFF47 value3: " << std::hex << static_cast<unsigned int>(value) << " at address " << static_cast<unsigned int>(address&0xFF) << std::endl;
+                                }
 								zram[address&0xFF] = value; break;
                         }
                     }
