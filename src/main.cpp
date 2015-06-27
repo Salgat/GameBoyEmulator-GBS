@@ -25,6 +25,7 @@ int main() {
     GameBoy gameboy;
     //gameboy.LoadGame("opus5.gb");
     gameboy.LoadGame("Tetris.gb");
+    //gameboy.LoadGame("PokemonRed.gb");
     //gameboy.LoadGame("cpu_instrs.gb");
 
     //gameboy.LoadGame("01-special.gb");

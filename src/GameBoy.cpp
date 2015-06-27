@@ -10,7 +10,7 @@ GameBoy::GameBoy() {
     cpu.Initialize(&mmu);
     mmu.Initialize(&cpu, &input);
     display.Initialize(&cpu, &mmu);
-    timer.Initialize(&cpu, &mmu);
+    timer.Initialize(&cpu, &mmu, &display);
 	input.Initialize(&mmu);
 
 	Reset();

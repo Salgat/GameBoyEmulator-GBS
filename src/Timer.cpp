@@ -5,6 +5,7 @@
 #include "Timer.hpp"
 #include "Processor.hpp"
 #include "MemoryManagementUnit.hpp"
+#include "Display.hpp"
 
 #include <iostream>
 
@@ -12,9 +13,10 @@ Timer::Timer() {
     Reset();
 }
 
-void Timer::Initialize(Processor* cpu_, MemoryManagementUnit* mmu_) {
+void Timer::Initialize(Processor* cpu_, MemoryManagementUnit* mmu_, Display* display_) {
     cpu = cpu_;
     mmu = mmu_;
+    display = display_;
 }
 
 void Timer::Reset() {
@@ -79,6 +81,9 @@ void Timer::Increment() {
 	if (scanline_tracker >= 456/4) { // Check if this is >=  or just >
 		++scanline;
         scanline_tracker -= 456/4;
+        if (scanline < 144) {
+            display->RenderScanline(scanline);
+        }
     }
     if (scanline > 153) {
         scanline -= 153;

@@ -1,5 +1,6 @@
 //
-// Created by Austin on 6/26/2015.
+// Special credit goes to Imran Nazar's JavaScript implementation of the input (written in JavaScript), which was
+// used as a reference. imrannazar.com/GameBoy-Emulation-in-Javascript:-Input
 //
 
 #include "Input.hpp"

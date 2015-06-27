@@ -9,6 +9,7 @@
 
 class Processor;
 class MemoryManagementUnit;
+class Display;
 
 class Timer {
 public:
@@ -30,13 +31,14 @@ public:
 
     Timer();
 
-    void Initialize(Processor* cpu_, MemoryManagementUnit* mmu_);
+    void Initialize(Processor* cpu_, MemoryManagementUnit* mmu_, Display* display_);
     void Reset();
     void Increment();
 
 private:
     Processor* cpu;
     MemoryManagementUnit* mmu;
+    Display* display;
 
 	bool v_blank_triggered;
 };
