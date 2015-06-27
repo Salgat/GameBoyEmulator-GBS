@@ -21,6 +21,7 @@ MemoryManagementUnit::MemoryManagementUnit() {
     wram = std::vector<uint8_t>(0x2000, 0);
     oam = std::vector<uint8_t>(0xA0, 0);
     zram = std::vector<uint8_t>(0x100, 0);
+    hram = std::vector<uint8_t>(0x100, 0);
 
     Reset();
 }
@@ -101,7 +102,7 @@ void MemoryManagementUnit::Reset() {
     zram[0xFF49&0xFF] = 0xFF;
     zram[0xFF4A&0xFF] = 0x00;
     zram[0xFF4B&0xFF] = 0x00;
-    zram[0xFFFF&0xFF] = 0x00; interrupt_enable = 0x00; // the two are equivalent
+    hram[0xFFFF&0xFF] = 0x00; interrupt_enable = 0x00; // the two are equivalent
 	interrupt_flag = 0xE1; // 0xFF0F
 
     // Setup ROM banks and RAM
@@ -189,7 +190,7 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
                         return interrupt_enable;
                     } else if (address > 0xFF7F) {
                         // Zero-Page RAM (ZRAM or sometimes called HRAM)
-                        return zram[address & 0x7F];
+                        return hram[address & 0x7F];
                     } else {
                         // TODO: Finish this section (input, graphics registers, etc)
                         switch (address & 0xF0) {
@@ -327,9 +328,10 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                     if (address == 0xFFFF) {
                         interrupt_enable = value;
                     } else if (address > 0xFF7F) {
+                        hram[address & 0x7F] = value;
                         // TODO: There is a bug here where there is some overlap in writing to zram, need to seperate these two
-                        if ((address & 0x7F) != 0x47)
-                            zram[address & 0x7F] = value;
+                        //if ((address & 0x7F) != 0x47)
+                        //    zram[address & 0x7F] = value;
                     } else {
                         switch(address & 0xF0) {
                             case 0x00:

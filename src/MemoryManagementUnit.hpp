@@ -30,6 +30,7 @@ public:
     std::vector<uint8_t> wram; // Working RAM (internal 8K RAM to Gameboy)
     std::vector<uint8_t> oam; // Object Attribute Memory (for sprites)
     std::vector<uint8_t> zram; // Zero-Page RAM (ZRAM or sometimes called HRAM)
+    std::vector<uint8_t> hram; // High RAM from 0xFF80 to 0xFFFF
     uint8_t interrupt_enable; // IE register, which allows interrupts if enabled (1)
 	uint8_t interrupt_flag; // IF register
 
