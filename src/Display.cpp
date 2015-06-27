@@ -60,35 +60,42 @@ void Display::RenderScanline(uint8_t line_number) {
     // First draw background (if enabled)
     uint8_t lcd_control = mmu->zram[0xFF40&0xFF];
     if(lcd_control & 0x01) {
-        // Determine if using tile map 0 or 1
-        uint16_t tile_map_address;
-        if ((lcd_control & 0x08) == 0) {
-            tile_map_address = 0x9800; // tile map #0
-        } else {
-            tile_map_address = 0x9c00; // tile map #1
-        }
+        DrawBackground(lcd_control, line_number);
+    }
 
-        // Determine if using tile set 0 or 1
-        uint16_t tile_set_address;
-        int tile_set_offset;
-        if ((lcd_control & 0x10) == 0) {
-            tile_set_address = 0x8800; // tile set #0
-            tile_set_offset = -128;
-        } else {
-            tile_set_address = 0x8000; // tile set #1
-            tile_set_offset = 0;
-        }
+    // Then draw Window
+    
+}
 
-        // Draw the first scanline
-        // Determine which tile row and line of tile to draw
-        uint8_t row = static_cast<uint8_t>(std::floor(static_cast<double>(line_number) / 8.0));
-        uint8_t tile_row = line_number % 8;
-        for (std::size_t x = 0; x < 32; ++x) {
-            uint8_t tile_number = mmu->ReadByte(tile_map_address + (32*row+x));
-            uint16_t tile_address = tile_set_address - tile_set_offset + tile_number*16;
+void Display::DrawBackground(uint8_t lcd_control, uint8_t line_number) {
+    // Determine if using tile map 0 or 1
+    uint16_t tile_map_address;
+    if ((lcd_control & 0x08) == 0) {
+        tile_map_address = 0x9800; // tile map #0
+    } else {
+        tile_map_address = 0x9c00; // tile map #1
+    }
 
-            DrawTilePattern(background, x, row, tile_row, tile_address);
-        }
+    // Determine if using tile set 0 or 1
+    uint16_t tile_set_address;
+    int tile_set_offset;
+    if ((lcd_control & 0x10) == 0) {
+        tile_set_address = 0x8800; // tile set #0
+        tile_set_offset = -128;
+    } else {
+        tile_set_address = 0x8000; // tile set #1
+        tile_set_offset = 0;
+    }
+
+    // Draw the first scanline
+    // Determine which tile row and line of tile to draw
+    uint8_t row = static_cast<uint8_t>(std::floor(static_cast<double>(line_number) / 8.0));
+    uint8_t tile_row = line_number % 8;
+    for (std::size_t x = 0; x < 32; ++x) {
+        uint8_t tile_number = mmu->ReadByte(tile_map_address + (32*row+x));
+        uint16_t tile_address = tile_set_address - tile_set_offset + tile_number*16;
+
+        DrawTilePattern(background, x, row, tile_row, tile_address);
     }
 }
 

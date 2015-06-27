@@ -43,6 +43,7 @@ private:
     std::vector<sf::Color> frame_buffer;
 
     void DrawTilePattern(std::vector<sf::Color>& background_map, std::size_t x, std::size_t y, std::size_t tile_x, uint16_t tile_address);
+    void DrawBackground(uint8_t lcd_control, uint8_t line_number);
 };
 
 #endif //GAMEBOYEMULATOR_DISPLAY_HPP
