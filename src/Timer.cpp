@@ -83,10 +83,12 @@ void Timer::Increment() {
         scanline_tracker -= 456/4;
         if (scanline < 144) {
             display->RenderScanline(scanline);
+        } else if (scanline > 153) {
+            display->RenderScanline(0);
         }
     }
     if (scanline > 153) {
-        scanline -= 153;
+        scanline = 0;
 		v_blank_triggered = false;
     }
 

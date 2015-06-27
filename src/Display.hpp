@@ -40,10 +40,13 @@ private:
 
 	sf::Image frame;
     std::vector<sf::Color> background;
-    std::vector<sf::Color> frame_buffer;
+    std::vector<bool> show_background;
+    std::vector<sf::Color> window;
+    std::vector<bool> show_window;
 
-    void DrawTilePattern(std::vector<sf::Color>& background_map, std::size_t x, std::size_t y, std::size_t tile_x, uint16_t tile_address);
+    void DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& show_map, std::size_t x, std::size_t y, std::size_t tile_x, uint16_t tile_address);
     void DrawBackground(uint8_t lcd_control, uint8_t line_number);
+    void DrawWindow(uint8_t lcd_control, uint8_t line_number);
 };
 
 #endif //GAMEBOYEMULATOR_DISPLAY_HPP
