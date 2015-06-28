@@ -213,7 +213,7 @@ void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
             }
         }
     }
-    //std::cout << "Sprite size: " << sprites.size() << std::endl;
+
     // Sort each sprite by its x position (the lowest x position is drawn last)
     std::sort(sprites.begin(), sprites.end(),
         [](Sprite const& first, Sprite const& second) -> bool {
@@ -223,11 +223,8 @@ void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
     // Draw the last 10 sprites
     int size = sprites.size();
     for (int index = size-1; (index >= 0); --index) {
-    //for (int index = 0; index < sprites.size(); ++index) {
-            //std::cout << "Drawing index: " << index << std::endl;
-            uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
-            DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].y, tile_address, true);
-
+        uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
+        DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].y, tile_address, true);
     }
 }
 
