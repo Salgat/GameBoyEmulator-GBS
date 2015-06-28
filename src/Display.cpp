@@ -205,7 +205,7 @@ void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
         uint8_t palette = (attributes & 0x10)?mmu->ReadByte(0xFF49):mmu->ReadByte(0xFF48); // Which palette to use
 
         // If on the scanline, add to sprites vector
-        if (y_position >= line_number and y_position < line_number + sprite_height) {
+        if (y_position <= line_number+16 and y_position+16 + sprite_height >= line_number) {
             // Construct the sprite and add it to sprites
             Sprite new_sprite;
             new_sprite.x = x_position;
@@ -236,7 +236,7 @@ void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
         uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
 
         //std::cout << "Drawing sprites with tile number: " << index << ", " << std::hex << static_cast<unsigned int>(sprites[index].tile_number) << std::endl;
-        DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].x, tile_address, true);
+        DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].y, tile_address, true);
     }
 }
 
@@ -293,18 +293,32 @@ void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& sh
             }
         }
 
-        std::size_t x_pixel = x*8 + 7-bit;
-        std::size_t y_pixel = (y*8+tile_x);
-        if (color == 0) {
-            map[y_pixel*256+x_pixel] = white;
-        } else if (color == 1) {
-            map[y_pixel*256+x_pixel] = light_gray;
-        } else if (color == 2) {
-            map[y_pixel*256+x_pixel] = dark_gray;
+        // Todo: For sprites, don't render "white" pixels
+        int x_pixel;
+        int y_pixel;
+        int destination;
+        if (is_sprite) {
+            x_pixel = (static_cast<int>(x)-8)*8 + 7-bit;
+            y_pixel = (static_cast<int>(x)-16)*8+tile_x;
+            destination = y_pixel*256+x_pixel;
         } else {
-            map[y_pixel*256+x_pixel] = black;
+            x_pixel = x*8 + 7-bit;
+            y_pixel = (y*8+tile_x);
+            destination = y_pixel*256+x_pixel;
         }
 
-        show_map[y_pixel*256+x_pixel] = true;
+        if (x_pixel >= 0 and x_pixel < 160 and y_pixel >= 0 and y_pixel < 144) {
+            if (color == 0) {
+                map[destination] = white;
+            } else if (color == 1) {
+                map[destination] = light_gray;
+            } else if (color == 2) {
+                map[destination] = dark_gray;
+            } else {
+                map[destination] = black;
+            }
+
+            show_map[destination] = true;
+        }
     }
 }
