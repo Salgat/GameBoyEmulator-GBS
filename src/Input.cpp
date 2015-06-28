@@ -60,7 +60,7 @@ void Input::KeyDown(KeyType key) {
         case KeyType::DOWN:   rows[1] |= 0x08; break;
         case KeyType::A:      rows[0] |= 0x01; break;
         case KeyType::B:      rows[0] |= 0x02; break;
-        case KeyType::SELECT: rows[0] |= 0x04; break; // This is 0x05 instead of 0x04 in the github?
+        case KeyType::SELECT: rows[0] |= 0x04; break;
         case KeyType::START:  rows[0] |= 0x08; break;
     }
 }

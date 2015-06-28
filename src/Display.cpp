@@ -23,10 +23,15 @@ void Display::Initialize(Processor* cpu_, MemoryManagementUnit* mmu_) {
 void Display::Reset() {
 	frame = sf::Image();
     frame.create(160, 144);
+
     background = std::vector<sf::Color>(256*256, sf::Color::White);
     show_background = std::vector<bool>(256*256, false);
+
     window = std::vector<sf::Color>(256*256, sf::Color::White);
     show_window = std::vector<bool>(256*256, false);
+
+    sprite_map = std::vector<sf::Color>(256*256, sf::Color::White);
+    show_sprite = std::vector<bool>(256*256, false);
 }
 
 /**
@@ -69,6 +74,15 @@ sf::Image Display::RenderFrame() {
         }
     }
 
+    // Draw Sprites
+    for (int x = 0; x < 160; ++x) {
+        for (int y = 0; y < 144; ++y) {
+            if (show_sprite[y*256 + x]) {
+                frame.setPixel(x, y, sprite_map[y * 256 + x]);
+            }
+        }
+    }
+
     // Reset frames
     show_background = std::vector<bool>(256*256, false);
     show_window = std::vector<bool>(256*256, false);
@@ -89,6 +103,11 @@ void Display::RenderScanline(uint8_t line_number) {
     // Then draw Window
     if ((lcd_control & 0x20) and (lcd_control & 0x01)) { // I believe both need to be set to draw Window
         DrawWindow(lcd_control, line_number);
+    }
+
+    // Finally draw Sprites
+    if (lcd_control & 0x02) {
+        DrawSprites(lcd_control, line_number);
     }
 }
 
@@ -160,7 +179,68 @@ void Display::DrawWindow(uint8_t lcd_control, uint8_t line_number) {
     }
 }
 
-void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& show_map, std::size_t x, std::size_t y, std::size_t tile_x, uint16_t tile_address) {
+void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
+    uint16_t oam_table_address = 0xFE00;
+    uint16_t sprite_pattern_table = 0x8000; // Unsigned numbering
+
+    uint8_t sprite_height = (lcd_control & 0x04)?16:8; // Height of each sprite in pixels
+
+    // Iterate through all 40 sprites, drawing the first 10 on the current line_number
+    //std::cout << "New draw" << std::endl;
+    std::vector<Sprite> sprites;
+    for (int sprite = 0; sprite < 40; ++sprite) {
+        // TODO: It's far more efficient to only read y_position and read the rest after determining if it's on the scanline
+        // Each sprite is made up of 4 attributes
+        uint8_t y_position = mmu->ReadByte(oam_table_address+sprite*4+0);
+        uint8_t x_position = mmu->ReadByte(oam_table_address+sprite*4+1);
+        uint8_t tile_number = mmu->ReadByte(oam_table_address+sprite*4+2);
+        uint8_t attributes = mmu->ReadByte(oam_table_address+sprite*4+3);
+        //if (sprite == 0)
+        //    std::cout << "Sprite number and tile number: " << std::hex << static_cast<unsigned int>(sprite) << ", " << static_cast<unsigned int>(tile_number) << ", at address: " << static_cast<unsigned int>(oam_table_address+sprite*4+2) << std::endl;
+
+        bool y_flip = (attributes & 0x40)?true:false;
+        bool x_flip = (attributes & 0x20)?true:false;
+        bool draw_priority = (attributes & 0x80)?true:false; // If true, don't draw over background/window colors 1-3
+                                                             // TODO: Might need to create another bool vector for this
+        uint8_t palette = (attributes & 0x10)?mmu->ReadByte(0xFF49):mmu->ReadByte(0xFF48); // Which palette to use
+
+        // If on the scanline, add to sprites vector
+        if (y_position >= line_number and y_position < line_number + sprite_height) {
+            // Construct the sprite and add it to sprites
+            Sprite new_sprite;
+            new_sprite.x = x_position;
+            new_sprite.y = y_position;
+            new_sprite.tile_number = tile_number;
+            new_sprite.attributes = attributes;
+            new_sprite.x_flip = x_flip;
+            new_sprite.y_flip = y_flip;
+            new_sprite.draw_priority = draw_priority;
+            new_sprite.palette = palette;
+            new_sprite.height = sprite_height;
+
+            sprites.push_back(new_sprite);
+        }
+    }
+
+    // Sort each sprite by its x position (the lowest x position is drawn last)
+    std::sort(sprites.begin(), sprites.end(),
+        [](Sprite const& first, Sprite const& second) -> bool {
+            return first.x < second.x;
+        });
+
+    // Draw the last 10 sprites
+    //std::cout << "Start drawing" << std::endl;
+    for (int index = sprites.size()-1; (index > 0) and (index > sprites.size()-11); --index) {
+        if (index < 0) break;
+
+        uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
+
+        //std::cout << "Drawing sprites with tile number: " << index << ", " << std::hex << static_cast<unsigned int>(sprites[index].tile_number) << std::endl;
+        DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].x, tile_address, true);
+    }
+}
+
+void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& show_map, std::size_t x, std::size_t y, std::size_t tile_x, uint16_t tile_address, bool is_sprite) {
     uint16_t line = tile_address + 2*tile_x;
     // A line is made up of two bytes
     uint8_t line_0 = mmu->ReadByte(line);

@@ -19,7 +19,7 @@ MemoryManagementUnit::MemoryManagementUnit() {
     vram = std::vector<uint8_t>(0x2000, 0);
     eram = std::vector<uint8_t>(0x2000, 0);
     wram = std::vector<uint8_t>(0x2000, 0);
-    oam = std::vector<uint8_t>(0xA0, 0);
+    oam = std::vector<uint8_t>(0x100, 0);
     zram = std::vector<uint8_t>(0x100, 0);
     hram = std::vector<uint8_t>(0x100, 0);
 
@@ -177,7 +177,9 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
 
                 // OAM (Object Attribute Memory for Sprites)
                 case 0xE00:
-                    if (address & 0xFF <= 0x9F) {
+                    if ((address & 0xFF) <= 0x9F) {
+                        //if (address == 0xFE02)
+                            //std::cout << "Reading from FE02 for oam" << std::endl;
                         return oam[address & 0xFF];
                     } else {
                         // Outside range of OAM (empty)
@@ -232,10 +234,6 @@ uint16_t MemoryManagementUnit::ReadWord(uint16_t address) {
  * Writes a single byte to memory.
  */
 void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
-    if ((address&0x47) and value == 0) {
-        //std::cout << "Writing to 0xFF47 value: " << std::hex << static_cast<unsigned int>(value) << " at address " << static_cast<unsigned int>(address) << std::endl;
-    }
-
     switch(address & 0xF000) {
         // ROM Bank 0
         case 0x0000:
@@ -319,6 +317,8 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                 // OAM (Object Attribute Memory for Sprites)
                 case 0xE00:
                     if ((address & 0xFF) < 0xA0) {
+                        //if (address == 0xFE02)
+                            //std::cout << "Writing to FE02 for oam: " << std::hex << static_cast<unsigned int>(value) << std::endl;
                         oam[address & 0xFF] = value;
                     }
                     break;
@@ -335,9 +335,6 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                     } else {
                         switch(address & 0xF0) {
                             case 0x00:
-                                if ((address&0x47) and value == 0) {
-                                    //std::cout << "Writing to 0xFF47 value2: " << std::hex << static_cast<unsigned int>(value) << " at address " << static_cast<unsigned int>(address & 0xF) << std::endl;
-                                }
                                 switch(address & 0xF) {
                                     case 0:
                                         input->WriteByte(value);
@@ -360,10 +357,15 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
 								break;
 								
 							case 0x40: case 0x50: case 0x60: case 0x70:
-                                if ((address&0x47) and value == 0) {
-                                    //std::cout << "Writing to 0xFF47 value3: " << std::hex << static_cast<unsigned int>(value) << " at address " << static_cast<unsigned int>(address&0xFF) << std::endl;
+                                if (address == 0xFF46) {
+                                    // DMA Transfer (when this is written to, the value is used as the upper byte of
+                                    // the address XX00-XX9F that is copied to FE00-FE9F
+                                    uint16_t origin = static_cast<uint16_t>(value) << 8;
+                                    TransferToOAM(origin);
+                                } else {
+                                    zram[address&0xFF] = value;
                                 }
-								zram[address&0xFF] = value; break;
+                                break;
                         }
                     }
             }
@@ -376,4 +378,14 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
 void MemoryManagementUnit::WriteWord(uint16_t address, uint16_t value) {
     WriteByte(address, static_cast<uint8_t>(value & 0xFF));
     WriteByte(address+1, static_cast<uint8_t>(value >> 8)); // Higher byte in next address location
+}
+
+/**
+ * Transfers from origin->origin+9F to FE00->FE9F.
+ */
+void MemoryManagementUnit::TransferToOAM(uint16_t origin) {
+    for (uint16_t offset = 0; offset < 0xA0; ++offset) {
+        uint8_t value = ReadByte(origin+offset);
+        oam[offset] = value;
+    }
 }

@@ -58,6 +58,7 @@ private:
     Processor* cpu;
     Input* input;
 
+    void TransferToOAM(uint16_t origin);
 };
 
 #endif //GAMEBOYEMULATOR_MEMORYMANAGEMENTUNIT_HPP
