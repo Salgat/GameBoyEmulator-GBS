@@ -22,7 +22,7 @@ void DrawFrame(sf::Image const& frame) {
 int main() {
     window.create(sf::VideoMode(160, 144), "GameBoy Emulator");
 
-    GameBoy gameboy;
+    GameBoy gameboy(window);
     //gameboy.LoadGame("opus5.gb");
     gameboy.LoadGame("Tetris.gb");
     //gameboy.LoadGame("PokemonRed.gb");
@@ -47,7 +47,7 @@ int main() {
 	bool running = true;
     while(running) {
         auto start = std::chrono::high_resolution_clock::now();
-        auto result = gameboy.RenderFrame(window);
+        auto result = gameboy.RenderFrame();
         DrawFrame(result.first);
         running = result.second;
         auto end = std::chrono::high_resolution_clock::now();

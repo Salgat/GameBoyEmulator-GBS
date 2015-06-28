@@ -183,60 +183,51 @@ void Display::DrawWindow(uint8_t lcd_control, uint8_t line_number) {
 void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
     uint16_t oam_table_address = 0xFE00;
     uint16_t sprite_pattern_table = 0x8000; // Unsigned numbering
-
     uint8_t sprite_height = (lcd_control & 0x04)?16:8; // Height of each sprite in pixels
 
     // Iterate through all 40 sprites, drawing the first 10 on the current line_number
-    //std::cout << "New draw" << std::endl;
     std::vector<Sprite> sprites;
     for (int sprite = 0; sprite < 40; ++sprite) {
-        // TODO: It's far more efficient to only read y_position and read the rest after determining if it's on the scanline
-        // Each sprite is made up of 4 attributes
         uint8_t y_position = mmu->ReadByte(oam_table_address+sprite*4+0);
-        uint8_t x_position = mmu->ReadByte(oam_table_address+sprite*4+1);
-        uint8_t tile_number = mmu->ReadByte(oam_table_address+sprite*4+2);
-        uint8_t attributes = mmu->ReadByte(oam_table_address+sprite*4+3);
-        //if (sprite == 0)
-        //    std::cout << "Sprite number and tile number: " << std::hex << static_cast<unsigned int>(sprite) << ", " << static_cast<unsigned int>(tile_number) << ", at address: " << static_cast<unsigned int>(oam_table_address+sprite*4+2) << std::endl;
-
-        bool y_flip = (attributes & 0x40)?true:false;
-        bool x_flip = (attributes & 0x20)?true:false;
-        bool draw_priority = (attributes & 0x80)?true:false; // If true, don't draw over background/window colors 1-3
-                                                             // TODO: Might need to create another bool vector for this
-        uint8_t palette = (attributes & 0x10)?mmu->ReadByte(0xFF49):mmu->ReadByte(0xFF48); // Which palette to use
 
         // If on the scanline, add to sprites vector
-        if (y_position <= line_number+16 and y_position+16 + sprite_height >= line_number) {
+        if (y_position <= line_number and y_position + sprite_height >= line_number) {
             // Construct the sprite and add it to sprites
             Sprite new_sprite;
-            new_sprite.x = x_position;
+            new_sprite.x = mmu->ReadByte(oam_table_address+sprite*4+1);
             new_sprite.y = y_position;
-            new_sprite.tile_number = tile_number;
-            new_sprite.attributes = attributes;
-            new_sprite.x_flip = x_flip;
-            new_sprite.y_flip = y_flip;
-            new_sprite.draw_priority = draw_priority;
-            new_sprite.palette = palette;
-            new_sprite.height = sprite_height;
 
-            sprites.push_back(new_sprite);
+            if (new_sprite.x > 0 and new_sprite.x < 160+8 and new_sprite.y > 0 and new_sprite.y < 144+sprite_height+100) {
+                new_sprite.tile_number = mmu->ReadByte(oam_table_address + sprite * 4 + 2);
+                new_sprite.attributes = mmu->ReadByte(oam_table_address + sprite * 4 + 3);
+                new_sprite.x_flip = (new_sprite.attributes & 0x20) ? true : false;
+                new_sprite.y_flip = (new_sprite.attributes & 0x40) ? true : false;
+                new_sprite.draw_priority = (new_sprite.attributes & 0x80) ? true
+                                                                          : false; // If true, don't draw over background/window colors 1-3
+                // TODO: Might need to create another bool vector for this
+                new_sprite.palette = (new_sprite.attributes & 0x10) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(
+                        0xFF48); // Which palette to use
+                new_sprite.height = sprite_height;
+
+                sprites.push_back(std::move(new_sprite));
+            }
         }
     }
-
+    //std::cout << "Sprite size: " << sprites.size() << std::endl;
     // Sort each sprite by its x position (the lowest x position is drawn last)
-    /*std::sort(sprites.begin(), sprites.end(),
+    std::sort(sprites.begin(), sprites.end(),
         [](Sprite const& first, Sprite const& second) -> bool {
             return first.x < second.x;
-        });*/
+        });
 
     // Draw the last 10 sprites
-    //std::cout << "Start drawing" << std::endl;
-    //for (int index = sprites.size()-1; (index > 0) and (index > static_cast<int>(sprites.size())-11); --index) {
-    for (int index = 0; index < sprites.size(); ++index) {
-        uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
-       // if (sprites[index].y > 0x00)
-            //std::cout << "Drawing sprites with position and tile number: " << std::hex << static_cast<unsigned int>(sprites[index].x) << "," << static_cast<unsigned int>(sprites[index].y) << ", " << static_cast<unsigned int>(sprites[index].tile_number) << std::endl;
-        DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].y, tile_address, true);
+    int size = sprites.size();
+    for (int index = size-1; (index >= 0); --index) {
+    //for (int index = 0; index < sprites.size(); ++index) {
+            //std::cout << "Drawing index: " << index << std::endl;
+            uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
+            DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].y, tile_address, true);
+
     }
 }
 
@@ -307,7 +298,7 @@ void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& sh
             destination = y_pixel*256+x_pixel;
         }
 
-        if (x_pixel >= 0 and x_pixel < 160 and y_pixel >= 0 and y_pixel < 144) {
+        if (x_pixel >= 0 and x_pixel < 256 and y_pixel >= 0 and y_pixel < 256) {
             if (color == 0) {
                 map[destination] = white;
             } else if (color == 1) {

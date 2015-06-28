@@ -10,8 +10,9 @@ Input::Input() {
     Reset();
 }
 
-void Input::Initialize(MemoryManagementUnit* mmu_) {
+void Input::Initialize(MemoryManagementUnit* mmu_, sf::RenderWindow* window_) {
     mmu = mmu_;
+    window = window_;
 }
 
 void Input::Reset() {
@@ -66,14 +67,17 @@ void Input::KeyDown(KeyType key) {
 }
 
 
-bool Input::PollEvents(sf::RenderWindow& window) {
+bool Input::PollEvents() {
+    /**
+     * Should probably change from checking events to checking button state
+     */
     sf::Event event;
-    while (window.pollEvent(event)) {
+    while (window->pollEvent(event)) {
         if (event.type == sf::Event::Closed) {
-            window.close();
+            window->close();
             return false;
         }
-
+        /*
         if (event.type == sf::Event::KeyPressed) {
             if (event.key.code == sf::Keyboard::Left) {
                 KeyDown(KeyType::LEFT);
@@ -112,8 +116,144 @@ bool Input::PollEvents(sf::RenderWindow& window) {
             } else if (event.key.code == sf::Keyboard::RShift) {
                 KeyUp(KeyType::SELECT);
             }
-        }
+        }*/
     }
+/*
+    static bool left = false;
+    static bool right = false;
+    static bool up = false;
+    static bool down = false;
+    static bool a = false;
+    static bool b = false;
+    static bool start = false;
+    static bool select = false;
 
+    // Read button states
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) and !left) {
+        KeyDown(KeyType::LEFT);
+        left = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Left) and left) {
+        KeyUp(KeyType::LEFT);
+        left = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) and !right) {
+        KeyDown(KeyType::RIGHT);
+        right = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Right) and right) {
+        KeyUp(KeyType::RIGHT);
+        right = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) and !up) {
+        KeyDown(KeyType::UP);
+        up = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Up) and up) {
+        KeyUp(KeyType::UP);
+        up = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) and !down) {
+        KeyDown(KeyType::DOWN);
+        down = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Down) and down) {
+        KeyUp(KeyType::DOWN);
+        down = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::X) and !a) {
+        KeyDown(KeyType::A);
+        a = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::X) and a) {
+        KeyUp(KeyType::A);
+        a = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z) and !b) {
+        KeyDown(KeyType::B);
+        b = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Z) and b) {
+        KeyUp(KeyType::B);
+        b = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Return) and !start) {
+        KeyDown(KeyType::START);
+        start = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Return) and start) {
+        KeyUp(KeyType::START);
+        start = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::RShift) and !select) {
+        KeyDown(KeyType::SELECT);
+        select = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::RShift) and select) {
+        KeyUp(KeyType::SELECT);
+        select = false;
+    }
+*/
     return true;
+}
+
+void Input::UpdateInput() {
+    static bool left = false;
+    static bool right = false;
+    static bool up = false;
+    static bool down = false;
+    static bool a = false;
+    static bool b = false;
+    static bool start = false;
+    static bool select = false;
+
+    // Read button states
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) and !left) {
+        KeyDown(KeyType::LEFT);
+        left = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Left) and left) {
+        KeyUp(KeyType::LEFT);
+        left = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) and !right) {
+        KeyDown(KeyType::RIGHT);
+        right = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Right) and right) {
+        KeyUp(KeyType::RIGHT);
+        right = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) and !up) {
+        KeyDown(KeyType::UP);
+        up = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Up) and up) {
+        KeyUp(KeyType::UP);
+        up = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) and !down) {
+        KeyDown(KeyType::DOWN);
+        down = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Down) and down) {
+        KeyUp(KeyType::DOWN);
+        down = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::X) and !a) {
+        KeyDown(KeyType::A);
+        a = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::X) and a) {
+        KeyUp(KeyType::A);
+        a = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z) and !b) {
+        KeyDown(KeyType::B);
+        b = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Z) and b) {
+        KeyUp(KeyType::B);
+        b = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Return) and !start) {
+        KeyDown(KeyType::START);
+        start = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Return) and start) {
+        KeyUp(KeyType::START);
+        start = false;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::RShift) and !select) {
+        KeyDown(KeyType::SELECT);
+        select = true;
+    } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::RShift) and select) {
+        KeyUp(KeyType::SELECT);
+        select = false;
+    }
 }

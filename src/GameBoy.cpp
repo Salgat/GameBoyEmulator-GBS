@@ -6,12 +6,12 @@
 
 #include <iostream>
 
-GameBoy::GameBoy() {
+GameBoy::GameBoy(sf::RenderWindow& window) {
     cpu.Initialize(&mmu);
     mmu.Initialize(&cpu, &input);
     display.Initialize(&cpu, &mmu);
     timer.Initialize(&cpu, &mmu, &display);
-	input.Initialize(&mmu);
+	input.Initialize(&mmu, &window);
 
 	Reset();
 }
@@ -27,11 +27,10 @@ void GameBoy::Reset() {
 }
 
 // Todo: Frame calling v-blank 195-196x per frame??
-std::pair<sf::Image, bool> GameBoy::RenderFrame(sf::RenderWindow& window) {
+std::pair<sf::Image, bool> GameBoy::RenderFrame() {
+    bool running = (input.PollEvents())?true:false;
 	cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
-    bool running = true;
 	do {
-        if(!input.PollEvents(window)) running = false;
         if (cpu.halt) {
             cpu.m_clock = 1;
         } else {

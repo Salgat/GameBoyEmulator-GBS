@@ -24,11 +24,11 @@
  */
 class GameBoy {
 public:
-    GameBoy();
+    GameBoy(sf::RenderWindow& window);
     //~GameBoy();
 
     void Reset();
-    std::pair<sf::Image, bool> RenderFrame(sf::RenderWindow& window);
+    std::pair<sf::Image, bool> RenderFrame();
     void LoadGame(std::string rom_name);
 
 //private:

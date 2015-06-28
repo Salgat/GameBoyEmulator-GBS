@@ -200,6 +200,7 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
                                 switch (address & 0xF) {
                                     // 0xFF00: Joystick
 									case 0:
+                                        input->UpdateInput();
                                         return input->ReadByte();
 									
 									// Timers
