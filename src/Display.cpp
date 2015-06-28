@@ -86,6 +86,7 @@ sf::Image Display::RenderFrame() {
     // Reset frames
     show_background = std::vector<bool>(256*256, false);
     show_window = std::vector<bool>(256*256, false);
+    show_sprite = std::vector<bool>(256*256, false);
 
     return frame;
 }
@@ -223,19 +224,18 @@ void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
     }
 
     // Sort each sprite by its x position (the lowest x position is drawn last)
-    std::sort(sprites.begin(), sprites.end(),
+    /*std::sort(sprites.begin(), sprites.end(),
         [](Sprite const& first, Sprite const& second) -> bool {
             return first.x < second.x;
-        });
+        });*/
 
     // Draw the last 10 sprites
     //std::cout << "Start drawing" << std::endl;
-    for (int index = sprites.size()-1; (index > 0) and (index > sprites.size()-11); --index) {
-        if (index < 0) break;
-
+    //for (int index = sprites.size()-1; (index > 0) and (index > static_cast<int>(sprites.size())-11); --index) {
+    for (int index = 0; index < sprites.size(); ++index) {
         uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
-
-        //std::cout << "Drawing sprites with tile number: " << index << ", " << std::hex << static_cast<unsigned int>(sprites[index].tile_number) << std::endl;
+       // if (sprites[index].y > 0x00)
+            //std::cout << "Drawing sprites with position and tile number: " << std::hex << static_cast<unsigned int>(sprites[index].x) << "," << static_cast<unsigned int>(sprites[index].y) << ", " << static_cast<unsigned int>(sprites[index].tile_number) << std::endl;
         DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].y, tile_address, true);
     }
 }
@@ -298,8 +298,8 @@ void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& sh
         int y_pixel;
         int destination;
         if (is_sprite) {
-            x_pixel = (static_cast<int>(x)-8)*8 + 7-bit;
-            y_pixel = (static_cast<int>(x)-16)*8+tile_x;
+            x_pixel = static_cast<int>(x + 7-bit) - 8;
+            y_pixel = static_cast<int>(y+tile_x) - 16;
             destination = y_pixel*256+x_pixel;
         } else {
             x_pixel = x*8 + 7-bit;
