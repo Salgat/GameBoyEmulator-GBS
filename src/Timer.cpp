@@ -83,7 +83,12 @@ void Timer::Increment() {
         scanline_tracker -= 456/4;
         if (scanline < 144) {
             display->RenderScanline(scanline);
-        } else if (scanline > 153) {
+        } else if (scanline == 144) {
+			// Todo: This should be removed and is a hack, should place fix in RenderScanLine to offset y by -16 for sprites only
+			for (uint8_t line = 144; line < 144+2*16; ++line) {
+				display->RenderScanline(line);
+			}
+		} else if (scanline > 153) {
             display->RenderScanline(0);
         }
     }

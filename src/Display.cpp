@@ -191,22 +191,20 @@ void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
         uint8_t y_position = mmu->ReadByte(oam_table_address+sprite*4+0);
 
         // If on the scanline, add to sprites vector
-        if (y_position <= line_number and y_position + sprite_height >= line_number) {
+        if (y_position <= line_number and y_position + sprite_height > line_number) {
             // Construct the sprite and add it to sprites
             Sprite new_sprite;
             new_sprite.x = mmu->ReadByte(oam_table_address+sprite*4+1);
             new_sprite.y = y_position;
 
-            if (new_sprite.x > 0 and new_sprite.x < 160+8 and new_sprite.y > 0 and new_sprite.y < 144+sprite_height+100) {
+            if (new_sprite.x > 0 and new_sprite.x < 160+8 and new_sprite.y > 0 and new_sprite.y < 144+sprite_height+16) {
                 new_sprite.tile_number = mmu->ReadByte(oam_table_address + sprite * 4 + 2);
                 new_sprite.attributes = mmu->ReadByte(oam_table_address + sprite * 4 + 3);
                 new_sprite.x_flip = (new_sprite.attributes & 0x20) ? true : false;
                 new_sprite.y_flip = (new_sprite.attributes & 0x40) ? true : false;
-                new_sprite.draw_priority = (new_sprite.attributes & 0x80) ? true
-                                                                          : false; // If true, don't draw over background/window colors 1-3
+                new_sprite.draw_priority = (new_sprite.attributes & 0x80) ? true : false; // If true, don't draw over background/window colors 1-3
                 // TODO: Might need to create another bool vector for this
-                new_sprite.palette = (new_sprite.attributes & 0x10) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(
-                        0xFF48); // Which palette to use
+                new_sprite.palette = (new_sprite.attributes & 0x10) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use
                 new_sprite.height = sprite_height;
 
                 sprites.push_back(std::move(new_sprite));
@@ -222,14 +220,16 @@ void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
 
     // Draw the last 10 sprites
     int size = sprites.size();
-    for (int index = size-1; (index >= 0); --index) {
+    for (int index = size-1; (index >= 0) and (index > size-11); --index) {
         uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
-        DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].y, tile_address, true);
+        DrawTilePattern(sprite_map, show_sprite, sprites[index].x, sprites[index].y, line_number - sprites[index].y, tile_address, true, &sprites[index]);
     }
 }
 
-void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& show_map, std::size_t x, std::size_t y, std::size_t tile_x, uint16_t tile_address, bool is_sprite) {
-    uint16_t line = tile_address + 2*tile_x;
+void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& show_map, std::size_t x, std::size_t y, std::size_t tile_x, uint16_t tile_address, bool is_sprite, Sprite const* sprite) {
+	// TODO: An idea for sprites is to simply create new sprites every time the OAM is updated, and then update their attributes and other information continuously (more efficient)
+	
+	uint16_t line = (is_sprite and sprite->y_flip) ? tile_address + 2*((sprite->height-1)-tile_x) : tile_address + 2*tile_x;
     // A line is made up of two bytes
     uint8_t line_0 = mmu->ReadByte(line);
     uint8_t line_1 = mmu->ReadByte(line+1);
@@ -249,7 +249,7 @@ void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& sh
         }
 
         // Create a palette conversion
-        uint8_t palette = mmu->zram[0x47];
+        uint8_t palette = (is_sprite)?sprite->palette:mmu->zram[0x47];
         sf::Color white;
         sf::Color light_gray;
         sf::Color dark_gray;
@@ -286,7 +286,8 @@ void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& sh
         int y_pixel;
         int destination;
         if (is_sprite) {
-            x_pixel = static_cast<int>(x + 7-bit) - 8;
+			int new_bit = (sprite->x_flip)?(7-bit):(bit);
+            x_pixel = static_cast<int>(x + 7-new_bit) - 8;
             y_pixel = static_cast<int>(y+tile_x) - 16;
             destination = y_pixel*256+x_pixel;
         } else {
@@ -305,8 +306,15 @@ void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& sh
             } else {
                 map[destination] = black;
             }
-
-            show_map[destination] = true;
+			
+			if (is_sprite and sprite->draw_priority) {
+				// If priority attribute set, only draw sprite if background and window are white (we assume that r=g=b)
+				if ((background[destination].r == 255 or !show_background[destination]) and (window[destination].r == 255 or !show_window[destination])) {
+					show_map[destination] = true;
+				}
+			} else {
+				show_map[destination] = true;
+			}
         }
     }
 }

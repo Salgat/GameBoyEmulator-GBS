@@ -23,15 +23,15 @@ int main() {
     window.create(sf::VideoMode(160, 144), "GameBoy Emulator");
 
     GameBoy gameboy(window);
-
-    //gameboy.LoadGame("Tetris.gb");
-    //gameboy.LoadGame("adjtris.gb");
+	//gameboy.LoadGame("adjtris.gb");
+    //gameboy.LoadGame("opus5.gb");
+    //gameboy.LoadGame("ttt.gb");
+    gameboy.LoadGame("Tetris.gb");
     //gameboy.LoadGame("PokemonRed.gb");
-    //gameboy.LoadGame("Super Mario Land 2 - 6 Golden Coins (USA, Europe) (Rev B).gb");
     //gameboy.LoadGame("cpu_instrs.gb");
 
     //gameboy.LoadGame("01-special.gb");
-    gameboy.LoadGame("02-interrupts.gb");
+    //gameboy.LoadGame("02-interrupts.gb");
     //gameboy.LoadGame("03-op sp,hl.gb");
     //gameboy.LoadGame("04-op r,imm.gb");
     //gameboy.LoadGame("05-op rp.gb");

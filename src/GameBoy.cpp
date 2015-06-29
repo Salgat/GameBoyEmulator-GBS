@@ -28,7 +28,7 @@ void GameBoy::Reset() {
 
 // Todo: Frame calling v-blank 195-196x per frame??
 std::pair<sf::Image, bool> GameBoy::RenderFrame() {
-    bool running = input.PollEvents();
+    bool running = (input.PollEvents())?true:false;
 	cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
 	do {
         if (cpu.halt) {
@@ -40,7 +40,7 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
         cpu.m_clock = 0;
 
         uint8_t if_memory_value = mmu.ReadByte(0xFF0F);
-        if ((mmu.interrupt_enable & if_memory_value) and (cpu.interrupt_master_enable or cpu.halt)) {
+        if (mmu.interrupt_enable and cpu.interrupt_master_enable and if_memory_value) {
 			cpu.halt = 0;
 			cpu.interrupt_master_enable = 0;
 			uint8_t interrupt_fired = mmu.interrupt_enable & if_memory_value;
