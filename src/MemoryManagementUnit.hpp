@@ -37,9 +37,9 @@ public:
     bool bios_mode;
     uint8_t cartridge_type; // Determines which memory bank controller is used
     uint8_t rom_size; // Number of 16KB (0x4000) banks available
-    uint16_t rom_offset; // Depending on memory bank selected, determines where in cartridge rom to read for ROM bank 1
+    unsigned int rom_offset; // Depending on memory bank selected, determines where in cartridge rom to read for ROM bank 1
     uint8_t ram_size; // 0: None, 1: 1 bank @ 2KB, 2: 1 bank @ 8KB, 3: 4 banks @ 32KB total
-    uint16_t ram_offset;
+    unsigned int ram_offset;
     MemoryBankController mbc1;
 
     MemoryManagementUnit();

@@ -43,6 +43,8 @@ void MemoryManagementUnit::LoadRom(std::string rom_name) {
     for (index = 0; index < 0x8000; ++index) {
         rom[index] = cartridge_rom[index];
     }
+
+    Reset();
 }
 
 void MemoryManagementUnit::Initialize(Processor* cpu_, Input* input_) {
@@ -107,6 +109,7 @@ void MemoryManagementUnit::Reset() {
 
     // Setup ROM banks and RAM
     cartridge_type = cartridge_rom[0x0147];
+    std::cout << "Cartridge type: " << std::hex << static_cast<unsigned int>(cartridge_type) << std::endl;
     rom_size = std::pow(2, cartridge_rom[0x0148]+1); // Number of 16KB (0x4000) banks available
     rom_offset = 0x4000;
     ram_size = cartridge_rom[0x0149]; // RAM type available
@@ -122,6 +125,7 @@ void MemoryManagementUnit::Reset() {
  * Returns byte read from provided address
  */
 uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
+    unsigned int rom_address;
     switch(address & 0xF000) {
         // ROM bank 0
         case 0x0000:
@@ -147,7 +151,14 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
         case 0x6000:
         case 0x7000:
             // Depending on ROM bank selected, read from that given bank
-            return cartridge_rom[address&0x3FFF + rom_offset];
+            //rom_address = address&0x3FFF;
+            //rom_address += static_cast<unsigned int>(rom_offset) * static_cast<unsigned int>(mbc1.rom_bank);
+
+            if (address == 0x411a) {
+                //std::cout << "Reading address in cartridge rom with offset: " << std::hex << static_cast<unsigned int>(rom_offset) << std::endl;
+            }
+            //return cartridge_rom[rom_address];
+            return cartridge_rom[static_cast<unsigned int>(address&0x3FFF) + rom_offset];
 
         // VRAM
         case 0x8000:
@@ -157,7 +168,7 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
         // External RAM
         case 0xA000:
         case 0xB000:
-            return eram[address & 0x1FFF + ram_offset];
+            return eram[static_cast<unsigned int>(address & 0x1FFF) + ram_offset];
 
         // Working RAM and its' echo
         case 0xC000:
@@ -236,11 +247,12 @@ uint16_t MemoryManagementUnit::ReadWord(uint16_t address) {
  */
 void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
     switch(address & 0xF000) {
-        // ROM Bank 0
+        // External RAM
         case 0x0000:
         case 0x1000:
             switch(cartridge_type) {
-                case 1:
+                case 2:
+                case 3:
                     mbc1.ram_enabled = ((value & 0xF) == 0xA) ? true : false;
                     break;
             }
@@ -249,37 +261,48 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
         // MBC1 ROM bank switch
         case 0x2000:
         case 0x3000:
+            //std::cout << "Setting value for rom bank: " << std::hex << static_cast<unsigned int>(value) << std::endl;
             switch(cartridge_type) {
                 case 1:
+                case 2:
+                case 3:
+                    //std::cout << "Setting value for rom bank: " << std::hex << static_cast<unsigned int>(value) << std::endl;
                     mbc1.rom_bank &= 0x60;
                     value &= 0x1F;
                     if (!value) value = 1;
-                    mbc1.rom_bank |= value;
+                    mbc1.rom_bank += value;
                     rom_offset = mbc1.rom_bank * 0x4000;
                     break;
             }
             break;
 
-        // ROM Bank 1
+        // RAM Bank
         case 0x4000:
         case 0x5000:
             switch(cartridge_type) {
                 case 1:
+                case 2:
+                case 3:
                     if (mbc1.mode) {
+                        // Set bank for RAM
                         mbc1.ram_bank = value & 3;
-                        ram_offset = mbc1.ram_bank * 0x2000;
+                        ram_offset = static_cast<unsigned int>(mbc1.ram_bank) * 0x2000;
                     } else {
+                        // Set bank for ROM (depends on "set" of ROM banks selected from)
+                        //std::cout << "Setting value for rom bank" << std::endl;
                         mbc1.rom_bank &= 0x1F;
-                        mbc1.rom_bank |= (value & 3) << 5;
+                        mbc1.rom_bank += static_cast<unsigned int>(value & 3) << 5;
                         rom_offset = mbc1.rom_bank * 0x4000;
                     }
+                    break;
             }
             break;
 
         case 0x6000:
         case 0x7000:
             switch(cartridge_type) {
-                case 1:
+                case 2:
+                case 3:
                     mbc1.mode = value & 1;
                     break;
             }
