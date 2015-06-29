@@ -946,6 +946,7 @@ void Processor::RST58() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.w
 void Processor::RST60() {stack_pointer.word -= 2; mmu->WriteWord(stack_pointer.word, program_counter.word); program_counter.word = 0x60; m_clock = 3;}
 
 void Processor::NOP() {m_clock = 1;}
+// Todo: Use www.emutalk.net/threads/41525-Game-Boy/page124
 void Processor::HALT() {if (!interrupt_master_enable) {program_counter.word +=1;} else halt = 1; m_clock = 1;}
 
 // Todo: Determine if interrupt master or IE is enabled
