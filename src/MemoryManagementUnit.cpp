@@ -17,7 +17,7 @@ MemoryManagementUnit::MemoryManagementUnit() {
     rom = std::vector<uint8_t>(0x10000, 0);
     cartridge_rom = std::vector<uint8_t>(0x200000, 0);
     vram = std::vector<uint8_t>(0x2000, 0);
-    eram = std::vector<uint8_t>(0x2000, 0);
+    eram = std::vector<uint8_t>(0x8000, 0);
     wram = std::vector<uint8_t>(0x2000, 0);
     oam = std::vector<uint8_t>(0x100, 0);
     zram = std::vector<uint8_t>(0x100, 0);
@@ -253,7 +253,7 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
             switch(cartridge_type) {
                 case 2:
                 case 3:
-                    mbc1.ram_enabled = ((value & 0xF) == 0xA) ? true : false;
+                    mbc1.ram_enabled = ((value & 0xF) == 0xA) ? true : false; // Writing to XXXX1010 enables RAM
                     break;
             }
             break;
