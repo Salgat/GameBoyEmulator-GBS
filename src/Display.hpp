@@ -23,16 +23,16 @@ class MemoryManagementUnit;
  * Defines each of the 40 sprites in the OAM sprite table
  */
 struct Sprite {
-    uint8_t x;
-    uint8_t y;
-    uint8_t tile_number;
+    int x;
+    int y;
+    int tile_number;
     uint8_t attributes;
 
     bool x_flip;
     bool y_flip;
     bool draw_priority;
     uint8_t palette;
-    uint8_t height;
+    int height;
 };
 
 /**
@@ -64,11 +64,13 @@ private:
     std::vector<bool> show_window;
     std::vector<sf::Color> sprite_map;
     std::vector<bool> show_sprite;
+    std::vector<bool> sprite_priority; // 0 = False, 1 = True
 
     std::array<int, 8> DrawTilePattern(uint16_t tile_address, int tile_line);
 	void DrawBackground(uint8_t lcd_control, int line_number);
     void DrawWindow(uint8_t lcd_control, int line_number);
-    void DrawSprites(uint8_t lcd_control, int line_number);
+    std::vector<Sprite> ReadSprites(uint8_t lcd_control);
+    void DrawSprites(uint8_t lcd_control, int line_number, std::vector<Sprite> const& sprites);
 };
 
 #endif //GAMEBOYEMULATOR_DISPLAY_HPP

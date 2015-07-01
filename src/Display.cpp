@@ -38,16 +38,25 @@ void Display::Reset() {
  * Returns the current frame for the GameBoy screen.
  */
 sf::Image Display::RenderFrame() {
-	uint8_t lcd_control = mmu->zram[0xFF40&0xFF];
-    for (unsigned int line = 0; line < 144; ++line) {
-		if (lcd_control & 0x01) {
+	uint8_t lcd_control = mmu->zram[0xFF40 & 0xFF];
+
+	if (lcd_control & 0x01) {
+		for (unsigned int line = 0; line < 144; ++line) {
 			DrawBackground(lcd_control, line);
 		}
 	}
-	
-	for (unsigned int line = 0; line < 144; ++line) {
-		if (lcd_control & 0x20) {
+
+	if (lcd_control & 0x20) {
+		for (unsigned int line = 0; line < 144; ++line) {
 			DrawWindow(lcd_control, line);
+		}
+	}
+
+	if (lcd_control & 0x02) {
+		auto sprites = ReadSprites(lcd_control);
+		//std::cout << "Sprite size: " << sprites.size() << std::endl;
+		for (unsigned int line = 0; line < 144; ++line) {
+			DrawSprites(lcd_control, line, sprites);
 		}
 	}
 
@@ -57,12 +66,17 @@ sf::Image Display::RenderFrame() {
 				frame.setPixel(x, y, background[y*256+x]);
 				
 			if (show_window[y*256+x])
-				frame.setPixel(x, y, window[y*256+x]);	
+				frame.setPixel(x, y, window[y*256+x]);
+
+			if (show_sprite[y*256+x])
+				frame.setPixel(x, y, sprite_map[y*256+x]);
+
         }
     }
 
 	show_background = std::vector<bool>(256*256, false);
 	show_window = std::vector<bool>(256*256, false);
+	show_sprite = std::vector<bool>(256*256, false);
 	return frame;
 }
 
@@ -288,9 +302,9 @@ void Display::DrawWindow(uint8_t lcd_control, int line_number) {
 		int bit = 7;
 		for (auto pixel : color_pixels) {
 		    int scroll_x = mmu->ReadByte(0xFF4B);
-			unsigned int x_position = (x_tile*8 + bit + 8);
+			unsigned int x_position = (x_tile*8+bit);
 			unsigned int y_position = line_number+16;
-			if (x_position >= scroll_x and y_position >= scroll_y) {
+			if (x_position-8 >= scroll_x and y_position >= scroll_y) {
 				window[y_position*256+x_position] = pixel;
 				show_window[y_position*256+x_position] = true;
 			}
@@ -300,8 +314,123 @@ void Display::DrawWindow(uint8_t lcd_control, int line_number) {
 	}
 }
 
-void Display::DrawSprites(uint8_t lcd_control, int line_number) {
-    
+/**
+ * Returns all Sprites in OAM (0xFE00-0xFE9F).
+ */
+std::vector<Sprite> Display::ReadSprites(uint8_t lcd_control) {
+	std::vector<Sprite> sprites;
+
+	uint16_t oam_table_address = 0xFE00;
+	uint8_t sprite_height = (lcd_control & 0x04)?16:8; // Height of each sprite in pixels
+	for (int index = 0; index < 40; ++index) {
+		int y_position = mmu->ReadByte(oam_table_address+index*4+0);
+		int x_position = mmu->ReadByte(oam_table_address+index*4+1);
+
+		// Test if within screen view
+		if (y_position-16 >= 0 and y_position-16 < 144 and x_position-8 >= 0 and x_position-8 < 160) {
+			Sprite new_sprite;
+			new_sprite.y = y_position;
+			new_sprite.x = x_position;
+			new_sprite.tile_number = mmu->ReadByte(oam_table_address + index * 4 + 2);
+			new_sprite.attributes = mmu->ReadByte(oam_table_address + index * 4 + 3);
+			new_sprite.x_flip = (new_sprite.attributes & 0x20) ? true : false;
+			new_sprite.y_flip = (new_sprite.attributes & 0x40) ? true : false;
+			new_sprite.draw_priority = (new_sprite.attributes & 0x80) ? true : false; // If true, don't draw over background/window colors 1-3
+			new_sprite.palette = (!(new_sprite.attributes & 0x10)) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use (0=OBP0, 1=OBP1)
+			new_sprite.height = sprite_height;
+
+			sprites.push_back(std::move(new_sprite));
+		}
+	}
+
+	// Sort each sprite by its x position (the lowest x position is drawn last)
+	// TODO: Add a condition where sprites with the same X and sorted by their OAM address
+	std::sort(sprites.begin(), sprites.end(),
+			  [](Sprite const& first, Sprite const& second) -> bool {
+				  return first.x < second.x;
+			  });
+
+	return sprites;
+}
+
+void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Sprite> const& sprites) {
+	uint16_t sprite_pattern_table = 0x8000; // Unsigned numbering
+
+	int drawn_count = 0;
+    for (int index = sprites.size()-1; index >= 0; --index) {
+		if (drawn_count >= 10) break; // Limit to drawing the first 10 sprites of highest priority
+		//std::cout << "Testing for index: " << index << std::endl;
+		if (sprites[index].y + sprites[index].height > line_number and sprites[index].y <= line_number) {
+			//std::cout << "Found sprite on scanline: " << line_number << std::endl;
+			// If on the scanline, draw the sprite's current line
+			uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
+			int tile_line = line_number-sprites[index].y;
+			if (sprites[index].y_flip) {
+				tile_line = sprites[index].height - 1 - tile_line;
+			}
+			auto line_pixels = DrawTilePattern(tile_address, tile_line);
+
+			// Setup Palette for scanline
+			uint8_t palette = sprites[index].palette;
+			sf::Color white;
+			sf::Color light_gray;
+			sf::Color dark_gray;
+			sf::Color black;
+			for (uint8_t bits = 0; bits < 7; bits+=2) {
+				uint8_t bit0 = (palette & (1<<bits))>>bits;
+				uint8_t bit1 = (palette & (1<<(bits+1)))>>(bits+1);
+				uint8_t value = bit0 + (bit1 << 1);
+
+				sf::Color new_color;
+				if (value == 0x00) {
+					new_color = kBlack;
+				} else if (value == 0x01) {
+					new_color = kDarkGray;
+				} else if (value == 0x02) {
+					new_color = kLightGray;
+				} else if (value == 0x03) {
+					new_color = kWhite;
+				}
+
+				if (bits == 0) {
+					black = new_color;
+				} else if (bits == 2) {
+					dark_gray = new_color;
+				} else if (bits == 4) {
+					light_gray = new_color;
+				} else if (bits == 6) {
+					white = new_color;
+				}
+			}
+
+			// Convert color based on palette
+			std::array<sf::Color, 8> color_pixels;
+			for (unsigned int index = 0; index < 8; ++index) {
+				if (line_pixels[index] == 0) {
+					color_pixels[index] = white;
+				} else if (line_pixels[index] == 1) {
+					color_pixels[index] = light_gray;
+				} else if (line_pixels[index] == 2) {
+					color_pixels[index] = dark_gray;
+				} else {
+					color_pixels[index] = black;
+				}
+			}
+
+			// Write pixels to window map
+			int bit = 7;
+			for (auto pixel : color_pixels) {
+				unsigned int x_position = (sprites[index].x_flip)?sprites[index].x+7-bit-8:sprites[index].x+bit-8;
+				unsigned int y_position = line_number-16;
+				sprite_map[y_position*256+x_position] = pixel;
+				show_sprite[y_position*256+x_position] = true;
+
+				--bit;
+			}
+
+			++drawn_count;
+		}
+	}
 }
 
 /**
