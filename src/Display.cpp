@@ -38,6 +38,21 @@ void Display::Reset() {
  * Returns the current frame for the GameBoy screen.
  */
 sf::Image Display::RenderFrame() {
+    // Draw background all at once for entire frame
+    uint8_t lcd_control = mmu->zram[0xFF40&0xFF];
+    if (lcd_control & 0x01) {
+        for (unsigned int y = 0; y < 256; ++y) {
+            DrawBackground(lcd_control, y);
+        }
+    }
+
+    // Finally draw Sprites
+    if (lcd_control & 0x02) {
+        for (unsigned int y = 0; y < 256; ++y) {
+            DrawSprites(lcd_control, y);
+        }
+    }
+
     // Draw background onto frame, then add window and sprite
     uint8_t scroll_y = mmu->ReadByte(0xFF42);
     uint8_t scroll_x = mmu->ReadByte(0xFF43);
@@ -95,9 +110,10 @@ sf::Image Display::RenderFrame() {
  * Renders the current scanline.
  */
 void Display::RenderScanline(uint8_t line_number) {
+/*
     // First draw background (if enabled)
     uint8_t lcd_control = mmu->zram[0xFF40&0xFF];
-    if (lcd_control & 0x01) {
+    /*if (lcd_control & 0x01) {
         DrawBackground(lcd_control, line_number);
     }
 
@@ -110,6 +126,7 @@ void Display::RenderScanline(uint8_t line_number) {
     if (lcd_control & 0x02) {
         DrawSprites(lcd_control, line_number);
     }
+    */
 }
 
 /**
@@ -208,7 +225,8 @@ void Display::DrawSprites(uint8_t lcd_control, uint8_t line_number) {
                 new_sprite.y_flip = (new_sprite.attributes & 0x40) ? true : false;
                 new_sprite.draw_priority = (new_sprite.attributes & 0x80) ? true : false; // If true, don't draw over background/window colors 1-3
                 // TODO: Might need to create another bool vector for this
-                new_sprite.palette = (new_sprite.attributes & 0x10) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use
+                //new_sprite.palette = (new_sprite.attributes & 0x10) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use (0=OBP0, 1=OBP1)
+                new_sprite.palette = (new_sprite.attributes & 0x10) ? mmu->ReadByte(0xFF48) : mmu->ReadByte(0xFF49); // Which palette to use (0=OBP0, 1=OBP1)
                 new_sprite.height = sprite_height;
 
                 sprites.push_back(std::move(new_sprite));
@@ -248,7 +266,7 @@ void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& sh
             color = 1;
         } else if (bit_1 and !bit_0) {
             color = 2;
-        } else {
+        } else if (bit_1 and bit_0) {
             color = 3;
         }
 
@@ -281,7 +299,11 @@ void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& sh
             } else if (bits == 4) {
                 light_gray = new_color;
             } else if (bits == 6) {
-                white = new_color;
+                if (is_sprite) {
+                    white = kTransparent;
+                } else {
+                    white = new_color;
+                }
             }
         }
 
@@ -310,15 +332,20 @@ void Display::DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& sh
             } else {
                 map[destination] = black;
             }
-			
-			if (is_sprite and sprite->draw_priority) {
-				// If priority attribute set, only draw sprite if background and window are white (we assume that r=g=b)
-				if ((background[destination].r == 255 or !show_background[destination]) and (window[destination].r == 255 or !show_window[destination])) {
-					show_map[destination] = true;
-				}
-			} else {
-				show_map[destination] = true;
-			}
+
+            //if (map[destination].r != 0) {
+                if (is_sprite and sprite->draw_priority) {
+                    // If priority attribute set, only draw sprite if background and window are white (we assume that r=g=b)
+                    if ((background[destination].r == 255 or !show_background[destination]) and
+                        (window[destination].r == 255 or !show_window[destination])) {
+                        show_map[destination] = true;
+                    }
+                } else if (is_sprite and map[destination].r == 1) {
+                    show_map[destination] = false;
+                } else {
+                    show_map[destination] = true;
+                }
+            //}
         }
     }
 }

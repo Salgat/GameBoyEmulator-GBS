@@ -38,10 +38,11 @@ struct Sprite {
  * Handles rendering to the "screen".
  */
 class Display {
-    sf::Color const kWhite     = sf::Color(255, 255, 255, 255);
-    sf::Color const kLightGray = sf::Color(192, 192, 192, 255);
-    sf::Color const kDarkGray  = sf::Color( 96,  96,  96, 255);
-    sf::Color const kBlack     = sf::Color(  0,   0,   0, 255);
+    sf::Color const kWhite       = sf::Color(255, 255, 255, 255);
+    sf::Color const kLightGray   = sf::Color(192, 192, 192, 255);
+    sf::Color const kDarkGray    = sf::Color( 96,  96,  96, 255);
+    sf::Color const kBlack       = sf::Color(  0,   0,   0, 255);
+    sf::Color const kTransparent = sf::Color(  1,   1,   1,   0);
 
 public:
     Display();
