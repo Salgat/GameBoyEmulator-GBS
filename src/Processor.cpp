@@ -185,7 +185,7 @@ void Processor::ExecuteNextInstruction() {
     // LCDC: LCD control register (FF40)
     // STAT: LCD status register (FF41)
     // LY:   LCDC Y-Coordinate which determines which line on the screen is at (0-153, where 144-153 is V-Blank) (FF44)
-	static bool after = false;
+	/*static bool after = false;
 	if (program_counter.word-1 == 0x411A or after) {
 		//after = true;
 		std::cout << "---------------------------------------------------" << std::endl;

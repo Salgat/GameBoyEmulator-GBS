@@ -8,6 +8,7 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <array>
 
 // SFML
 #include <SFML/Audio.hpp>
@@ -64,10 +65,10 @@ private:
     std::vector<sf::Color> sprite_map;
     std::vector<bool> show_sprite;
 
-    void DrawTilePattern(std::vector<sf::Color>& map, std::vector<bool>& show_map, std::size_t x, std::size_t y, std::size_t tile_x, uint16_t tile_address, bool is_sprite = false, Sprite const* sprite = nullptr);
-    void DrawBackground(uint8_t lcd_control, uint8_t line_number);
-    void DrawWindow(uint8_t lcd_control, uint8_t line_number);
-    void DrawSprites(uint8_t lcd_control, uint8_t line_number);
+    std::array<int, 8> DrawTilePattern(uint16_t tile_address, int tile_line);
+	void DrawBackground(uint8_t lcd_control, int line_number);
+    void DrawWindow(uint8_t lcd_control, int line_number);
+    void DrawSprites(uint8_t lcd_control, int line_number);
 };
 
 #endif //GAMEBOYEMULATOR_DISPLAY_HPP

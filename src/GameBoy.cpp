@@ -29,7 +29,9 @@ void GameBoy::Reset() {
 // Todo: Frame calling v-blank 195-196x per frame??
 std::pair<sf::Image, bool> GameBoy::RenderFrame() {
     bool running = (input.PollEvents())?true:false;
-	cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
+	//cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
+	sf::Image frame;
+	bool v_blank = false;
 	do {
         if (cpu.halt) {
             cpu.m_clock = 1;
@@ -45,7 +47,7 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
 			cpu.interrupt_master_enable = 0;
 			uint8_t interrupt_fired = mmu.interrupt_enable & if_memory_value;
 
-            if (interrupt_fired & 0x01) {if_memory_value &= 0XFE; cpu.RST40();}
+            if (interrupt_fired & 0x01) {if_memory_value &= 0XFE; v_blank = true; frame = display.RenderFrame(); cpu.RST40();}
 			else if (interrupt_fired & 0x02) {if_memory_value &= 0XFD; cpu.RST48();}
 			else if (interrupt_fired & 0x04) {if_memory_value &= 0XFB; cpu.RST50();}
 			else if (interrupt_fired & 0x08) {if_memory_value &= 0XF7; cpu.RST58();}
@@ -60,8 +62,9 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
         cpu.m_clock = 0;
 		
 		timer.Increment();
-	} while(cpu.clock < cpu.frame_clock);
+	} while(!v_blank);	
+	//} while(cpu.clock < cpu.frame_clock);
 
 	
-	return std::make_pair(display.RenderFrame(), running);
+	return std::make_pair(frame, running);
 }
