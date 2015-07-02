@@ -32,7 +32,7 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
 	//cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
 	sf::Image frame;
 	bool v_blank = false;
-    do {
+	do {
         if (cpu.halt) {
             cpu.m_clock = 1;
         } else {
@@ -47,7 +47,7 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
 			cpu.interrupt_master_enable = 0;
 			uint8_t interrupt_fired = mmu.interrupt_enable & if_memory_value;
 
-            if (interrupt_fired & 0x01) {if_memory_value &= 0XFE; v_blank = true; cpu.RST40();}
+            if (interrupt_fired & 0x01) {if_memory_value &= 0XFE; v_blank = true; frame = display.RenderFrame(); cpu.RST40();}
 			else if (interrupt_fired & 0x02) {if_memory_value &= 0XFD; cpu.RST48();}
 			else if (interrupt_fired & 0x04) {if_memory_value &= 0XFB; cpu.RST50();}
 			else if (interrupt_fired & 0x08) {if_memory_value &= 0XF7; cpu.RST58();}

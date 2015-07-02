@@ -82,9 +82,9 @@ void Timer::Increment() {
 		++scanline;
         scanline_tracker -= 456/4;
         if (scanline < 144) {
-            //display->RenderScanline(scanline);
+            display->RenderScanline(scanline);
 		} else if (scanline > 153) {
-            //display->RenderScanline(0);
+            display->RenderScanline(0);
         }
     }
     if (scanline > 153) {

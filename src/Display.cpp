@@ -40,35 +40,15 @@ void Display::Reset() {
 sf::Image Display::RenderFrame() {
 	uint8_t lcd_control = mmu->zram[0xFF40 & 0xFF];
 	if (lcd_control & 0x80) {
-		if (lcd_control & 0x01) {
-			for (unsigned int line = 0; line < 144; ++line) {
-				DrawBackground(lcd_control, line);
-			}
-		}
-
-		if (lcd_control & 0x20) {
-			for (unsigned int line = 0; line < 144; ++line) {
-				DrawWindow(lcd_control, line);
-			}
-		}
-
-		if (lcd_control & 0x02) {
-			auto sprites = ReadSprites(lcd_control);
-			//std::cout << "Sprite size: " << sprites.size() << std::endl;
-			for (unsigned int line = 0; line < 144; ++line) {
-				DrawSprites(lcd_control, line, sprites);
-			}
-		}
-
 		for (int x = 0; x < 160; ++x) {
 			for (int y = 0; y < 144; ++y) {
-				if (show_background[y*256+x])
+				if (show_background[y*256+x] and (lcd_control & 0x01))
 					frame.setPixel(x, y, background[y*256+x]);
 
-				if (show_window[y*256+x])
+				if (show_window[y*256+x] and (lcd_control & 0x20) and (lcd_control & 0x01))
 					frame.setPixel(x, y, window[y*256+x]);
 
-				if (show_sprite[y*256+x])
+				if (show_sprite[y*256+x] and (lcd_control & 0x02))
 					frame.setPixel(x, y, sprite_map[y*256+x]);
 			}
 		}
@@ -85,21 +65,22 @@ sf::Image Display::RenderFrame() {
  */
 void Display::RenderScanline(uint8_t line_number) {
     // First draw background (if enabled)
-    /*uint8_t lcd_control = mmu->zram[0xFF40&0xFF];
-    if (lcd_control & 0x01) {
+    uint8_t lcd_control = mmu->zram[0xFF40&0xFF];
+    //if (lcd_control & 0x01) {
         DrawBackground(lcd_control, line_number);
-    }
+    //}
 	
     // Then draw Window
-    if ((lcd_control & 0x20) and (lcd_control & 0x01)) { // I believe both need to be set to draw Window
-        //DrawWindow(lcd_control, line_number);
-    }
+    //if ((lcd_control & 0x20) and (lcd_control & 0x01)) { // I believe both need to be set to draw Window
+        DrawWindow(lcd_control, line_number);
+    //}
 
     // Finally draw Sprites
-    if (lcd_control & 0x02) {
-        DrawSprites(lcd_control, line_number);
-    }
-    */
+    //if (lcd_control & 0x02) {
+		auto sprites = ReadSprites(lcd_control);
+        DrawSprites(lcd_control, line_number, sprites);
+    //}
+
 }
 
 /**
@@ -129,7 +110,6 @@ void Display::DrawBackground(uint8_t lcd_control, int line_number) {
     // First find which tile the scanline is on
 	int scroll_y = mmu->ReadByte(0xFF42);
 	int scroll_y_tile = std::floor(scroll_y/8.0);// Sets scroll_y to be divisible by 8
-	//int row = (line_number + scroll_y_tile) % 32; // Which row (32x32) on background
 	int row = static_cast<int>(std::floor(static_cast<double>(line_number+scroll_y) / 8.0)) % 32;
 	int tile_line = (scroll_y + line_number) % 8; // Which y tile (8x8 or 8x16) on background
 												  // TODO: Change modulus to be either 8 or 16
@@ -235,8 +215,8 @@ void Display::DrawWindow(uint8_t lcd_control, int line_number) {
 	int scroll_y = mmu->ReadByte(0xFF4A);
 	int scroll_y_tile = std::floor(scroll_y/8.0);// Sets scroll_y to be divisible by 8
 	//int row = (line_number + scroll_y_tile) % 32; // Which row (32x32) on background
-	int row = static_cast<int>(std::floor(static_cast<double>(line_number+scroll_y) / 8.0)) % 32;
-	int tile_line = (scroll_y + line_number) % 8; // Which y tile (8x8 or 8x16) on background
+	int row = static_cast<int>(std::floor(static_cast<double>(line_number) / 8.0)) % 32;
+	int tile_line = (line_number) % 8; // Which y tile (8x8 or 8x16) on background
 												  // TODO: Change modulus to be either 8 or 16
 	
 	// Setup Palette for scanline
@@ -302,9 +282,9 @@ void Display::DrawWindow(uint8_t lcd_control, int line_number) {
 		int bit = 7;
 		for (auto pixel : color_pixels) {
 		    int scroll_x = mmu->ReadByte(0xFF4B);
-			unsigned int x_position = (x_tile*8+bit);
-			unsigned int y_position = line_number+16;
-			if (x_position-8 >= scroll_x and y_position >= scroll_y) {
+			unsigned int x_position = (x_tile*8+bit) + scroll_x - 8;
+			unsigned int y_position = line_number+16 + scroll_y - 16;
+			if (x_position < 256 and y_position < 256) {
 				window[y_position*256+x_position] = pixel;
 				show_window[y_position*256+x_position] = true;
 			}
@@ -329,7 +309,7 @@ std::vector<Sprite> Display::ReadSprites(uint8_t lcd_control) {
 		// Test if within screen view
 		if (y_position-16 >= 0 and y_position-16 < 144 and x_position-8 >= 0 and x_position-8 < 160) {
 			Sprite new_sprite;
-			new_sprite.y = y_position;
+			new_sprite.y = y_position-16;
 			new_sprite.x = x_position;
 			new_sprite.tile_number = mmu->ReadByte(oam_table_address + index * 4 + 2);
 			new_sprite.attributes = mmu->ReadByte(oam_table_address + index * 4 + 3);
@@ -337,10 +317,11 @@ std::vector<Sprite> Display::ReadSprites(uint8_t lcd_control) {
 			new_sprite.y_flip = (new_sprite.attributes & 0x40) ? true : false;
 			new_sprite.draw_priority = (new_sprite.attributes & 0x80) ? true : false; // If true, don't draw over background/window colors 1-3
 			new_sprite.palette = (!(new_sprite.attributes & 0x10)) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use (0=OBP0, 1=OBP1)
-			if ((new_sprite.attributes & 0x10)) {
-				std::cout << "OBP1" << std::endl;
-			}
 			new_sprite.height = sprite_height;
+
+            if (new_sprite.attributes & 0x10) {
+                //std::cout << "OBP1" << std::endl;
+            }
 
 			sprites.push_back(std::move(new_sprite));
 		}
@@ -374,7 +355,7 @@ void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Spri
 			auto line_pixels = DrawTilePattern(tile_address, tile_line);
 
 			// Setup Palette for scanline
-			uint8_t palette = sprites[index].palette & 0xFC;
+			uint8_t palette = sprites[index].palette;
 			sf::Color white;
 			sf::Color light_gray;
 			sf::Color dark_gray;
@@ -416,7 +397,7 @@ void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Spri
 					color_pixels[index] = light_gray;
 				} else if (line_pixels[index] == 2) {
 					color_pixels[index] = dark_gray;
-				} else {
+				} else if (line_pixels[index] == 3) {
 					color_pixels[index] = black;
 				}
 			}
@@ -424,14 +405,20 @@ void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Spri
 			// Write pixels to sprite map
 			int bit = 7;
 			for (auto pixel : color_pixels) {
-				unsigned int x_position = (sprites[index].x_flip)?sprites[index].x+7-bit-8:sprites[index].x+bit-8;
-				unsigned int y_position = line_number-16;
+				unsigned int x_position = (sprites[index].x_flip)?sprites[index].x+7-bit-8:sprites[index].x+bit - 8;
+				unsigned int y_position = line_number;
 
 				if (pixel.r != 1) {
-					show_sprite[y_position*256+x_position] = true;
-					sprite_map[y_position*256+x_position] = pixel;
+					if (sprites[index].draw_priority) {
+						if (show_background[y_position*256+x_position] and background[y_position*256+x_position].r == 255) {
+							show_sprite[y_position*256+x_position] = true;
+							sprite_map[y_position*256+x_position] = pixel;
+						}
+					} else {
+						show_sprite[y_position*256+x_position] = true;
+						sprite_map[y_position*256+x_position] = pixel;
+					}
 				}
-
 
 				--bit;
 			}
