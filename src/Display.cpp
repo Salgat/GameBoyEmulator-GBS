@@ -39,40 +39,40 @@ void Display::Reset() {
  */
 sf::Image Display::RenderFrame() {
 	uint8_t lcd_control = mmu->zram[0xFF40 & 0xFF];
+	if (lcd_control & 0x80) {
+		if (lcd_control & 0x01) {
+			for (unsigned int line = 0; line < 144; ++line) {
+				DrawBackground(lcd_control, line);
+			}
+		}
 
-	if (lcd_control & 0x01) {
-		for (unsigned int line = 0; line < 144; ++line) {
-			DrawBackground(lcd_control, line);
+		if (lcd_control & 0x20) {
+			for (unsigned int line = 0; line < 144; ++line) {
+				DrawWindow(lcd_control, line);
+			}
+		}
+
+		if (lcd_control & 0x02) {
+			auto sprites = ReadSprites(lcd_control);
+			//std::cout << "Sprite size: " << sprites.size() << std::endl;
+			for (unsigned int line = 0; line < 144; ++line) {
+				DrawSprites(lcd_control, line, sprites);
+			}
+		}
+
+		for (int x = 0; x < 160; ++x) {
+			for (int y = 0; y < 144; ++y) {
+				if (show_background[y*256+x])
+					frame.setPixel(x, y, background[y*256+x]);
+
+				if (show_window[y*256+x])
+					frame.setPixel(x, y, window[y*256+x]);
+
+				if (show_sprite[y*256+x])
+					frame.setPixel(x, y, sprite_map[y*256+x]);
+			}
 		}
 	}
-
-	if (lcd_control & 0x20) {
-		for (unsigned int line = 0; line < 144; ++line) {
-			DrawWindow(lcd_control, line);
-		}
-	}
-
-	if (lcd_control & 0x02) {
-		auto sprites = ReadSprites(lcd_control);
-		//std::cout << "Sprite size: " << sprites.size() << std::endl;
-		for (unsigned int line = 0; line < 144; ++line) {
-			DrawSprites(lcd_control, line, sprites);
-		}
-	}
-
-	for (int x = 0; x < 160; ++x) {
-        for (int y = 0; y < 144; ++y) {
-			if (show_background[y*256+x])
-				frame.setPixel(x, y, background[y*256+x]);
-				
-			if (show_window[y*256+x])
-				frame.setPixel(x, y, window[y*256+x]);
-
-			if (show_sprite[y*256+x])
-				frame.setPixel(x, y, sprite_map[y*256+x]);
-
-        }
-    }
 
 	show_background = std::vector<bool>(256*256, false);
 	show_window = std::vector<bool>(256*256, false);
@@ -337,6 +337,9 @@ std::vector<Sprite> Display::ReadSprites(uint8_t lcd_control) {
 			new_sprite.y_flip = (new_sprite.attributes & 0x40) ? true : false;
 			new_sprite.draw_priority = (new_sprite.attributes & 0x80) ? true : false; // If true, don't draw over background/window colors 1-3
 			new_sprite.palette = (!(new_sprite.attributes & 0x10)) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use (0=OBP0, 1=OBP1)
+			if ((new_sprite.attributes & 0x10)) {
+				std::cout << "OBP1" << std::endl;
+			}
 			new_sprite.height = sprite_height;
 
 			sprites.push_back(std::move(new_sprite));
@@ -371,7 +374,7 @@ void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Spri
 			auto line_pixels = DrawTilePattern(tile_address, tile_line);
 
 			// Setup Palette for scanline
-			uint8_t palette = sprites[index].palette;
+			uint8_t palette = sprites[index].palette & 0xFC;
 			sf::Color white;
 			sf::Color light_gray;
 			sf::Color dark_gray;
@@ -407,7 +410,8 @@ void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Spri
 			std::array<sf::Color, 8> color_pixels;
 			for (unsigned int index = 0; index < 8; ++index) {
 				if (line_pixels[index] == 0) {
-					color_pixels[index] = white;
+					color_pixels[index] = kTransparent;
+					//color_pixels[index] = white;
 				} else if (line_pixels[index] == 1) {
 					color_pixels[index] = light_gray;
 				} else if (line_pixels[index] == 2) {
@@ -417,16 +421,34 @@ void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Spri
 				}
 			}
 
-			// Write pixels to window map
+			// Write pixels to sprite map
 			int bit = 7;
 			for (auto pixel : color_pixels) {
 				unsigned int x_position = (sprites[index].x_flip)?sprites[index].x+7-bit-8:sprites[index].x+bit-8;
 				unsigned int y_position = line_number-16;
-				sprite_map[y_position*256+x_position] = pixel;
-				show_sprite[y_position*256+x_position] = true;
+
+				if (pixel.r != 1) {
+					show_sprite[y_position*256+x_position] = true;
+					sprite_map[y_position*256+x_position] = pixel;
+				}
+
 
 				--bit;
 			}
+
+			//if (sprites[index].tile_number == 0x59) {
+			/*if (sprites[index].tile_number == 0xB1) {
+				std::cout << std::hex << "Tile number: " << static_cast<unsigned int>(sprites[index].tile_number)
+									  << ", Palette: " << static_cast<unsigned int>(sprites[index].palette)
+				                      << ", Attribute: " << static_cast<unsigned int>(sprites[index].attributes)
+									  << ", Tile value at address: " << std::endl;
+				uint16_t line = tile_address;
+				std::cout << "Address: " << static_cast<unsigned int>(line) << std::endl;
+				for (unsigned int offset = 0; offset < 16; ++offset) {
+					unsigned int value = mmu->ReadByte(line+offset);
+					std::cout << std::dec << value << std::endl;
+				}
+			}*/
 
 			++drawn_count;
 		}
