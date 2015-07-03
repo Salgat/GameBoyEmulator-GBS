@@ -30,8 +30,9 @@ int main() {
     //gameboy.LoadGame("PokemonRed.gb");
     //gameboy.LoadGame("SML.gb");
     //gameboy.LoadGame("SML2.gb");
-    gameboy.LoadGame("cpu_instrs.gb");
+    //gameboy.LoadGame("cpu_instrs.gb");
     //gameboy.LoadGame("Madden '96.gb");
+    gameboy.LoadGame("LoZ.gb");
 
     //gameboy.LoadGame("01-special.gb");
     //gameboy.LoadGame("02-interrupts.gb");

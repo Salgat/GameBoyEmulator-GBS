@@ -11,10 +11,32 @@
 #include <string>
 
 struct MemoryBankController {
-    uint8_t rom_bank; // Current bank selected
-    uint8_t ram_bank;
-    bool ram_enabled;
-    uint8_t mode;
+    unsigned int rom_bank = 1; // Current bank selected
+    uint8_t number_rom_banks = 1; // Number of 16KB (0x4000) banks available
+    unsigned int rom_offset = 0x4000; // Depending on memory bank selected, determines where in cartridge rom to read for ROM bank 1
+
+    uint8_t ram_bank = 0;
+    uint8_t number_ram_banks = 0;
+    bool ram_enabled = false;
+    unsigned int ram_offset = 0x0000;
+    uint8_t mode = 0;
+
+    // Controller Type
+    bool mbc1 = false;
+    bool mbc1_banking_mode = false; // False == ROM banking mode, True == RAM banking mode
+    bool mbc2 = false;
+    bool mmm01 = false;
+    bool mbc3 = false;
+    bool mbc5 = false;
+    bool mbc7 = false;
+    bool tama5 = false;
+    bool huc3 = false;
+    bool huc1 = false;
+    bool sram = false;
+    bool battery = false;
+    bool timer = false;
+    bool rumble = false;
+    bool camera = false;
 };
 
 class Processor;
@@ -38,11 +60,8 @@ public:
 
     bool bios_mode;
     uint8_t cartridge_type; // Determines which memory bank controller is used
-    uint8_t rom_size; // Number of 16KB (0x4000) banks available
-    unsigned int rom_offset; // Depending on memory bank selected, determines where in cartridge rom to read for ROM bank 1
     uint8_t ram_size; // 0: None, 1: 1 bank @ 2KB, 2: 1 bank @ 8KB, 3: 4 banks @ 32KB total
-    unsigned int ram_offset;
-    MemoryBankController mbc1;
+    MemoryBankController mbc;
 
     MemoryManagementUnit();
 
