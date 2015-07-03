@@ -386,7 +386,16 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
                                         return input->ReadByte();
 									
 									// Timers
-									case 4: case 5: case 6: case 7:
+									case 4:
+                                        return timer->divider_clock;
+
+                                    case 5:
+                                        return timer->counter_clock;
+
+                                    case 6:
+                                        return zram[address&0xFF];
+
+                                    case 7:
 										return zram[address&0xFF];
 										
 									case 15:
@@ -547,17 +556,32 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                                     case 0:
                                         input->WriteByte(value);
                                         break;
-										
-									case 4: case 5: case 6: case 7:
-										if (address == 0xFF04) {
-                                            zram[address&0xFF] = 0;
-                                        } else {
-                                            zram[address&0xFF] = value;
+
+                                    case 1:
+                                        //std::cout << "Writing value at address: " << std::hex << static_cast<unsigned int>(zram[address&0x01]) << ", " << static_cast<unsigned int>(address) << std::endl;
+                                        zram[address&0xFF] = value;
+                                        break;
+
+                                    case 2:
+                                        if (value & 0x80) {
+                                            //std::cout << zram[0x01];
                                         }
+                                        break;
+
+                                    case 4:
+                                        timer->divider_clock = 0;
+                                        break;
+
+                                    case 5:
+                                        timer->counter_clock = value;
+
+                                    case 6: case 7:
+                                        zram[address&0xFF] = value;
                                         break;
 										
 									case 15:
-										interrupt_flag = value; break;
+										interrupt_flag = value;
+                                        break;
                                 }
 								break;
 								

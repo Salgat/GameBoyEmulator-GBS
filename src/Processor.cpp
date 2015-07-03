@@ -541,7 +541,7 @@ void Processor::ORr_e() {AF.higher |= DE.lower;  AF.lower = AF.higher?0:0x80; m_
 void Processor::ORr_h() {AF.higher |= HL.higher; AF.lower = AF.higher?0:0x80; m_clock = 1;}
 void Processor::ORr_l() {AF.higher |= HL.lower;  AF.lower = AF.higher?0:0x80; m_clock = 1;}
 void Processor::ORr_a() {AF.higher |= AF.higher; AF.lower = AF.higher?0:0x80; m_clock = 1;}
-void Processor::ORHL() {AF.higher |= mmu->ReadByte(HL.word); AF.lower = AF.higher?0:0x80; m_clock = 1;}
+void Processor::ORHL() {AF.higher |= mmu->ReadByte(HL.word); AF.lower = AF.higher?0:0x80; m_clock = 2;}
 void Processor::ORn() {AF.higher |= mmu->ReadByte(program_counter.word++); AF.lower = AF.higher?0:0x80; m_clock = 1;}
 
 void Processor::XORr_b() {AF.higher ^= BC.higher; AF.lower = AF.higher?0:0x80; m_clock = 1;}
@@ -900,7 +900,7 @@ void Processor::POPHL() {HL.lower = mmu->ReadByte(stack_pointer.word++); HL.high
 void Processor::POPAF() {AF.lower = mmu->ReadByte(stack_pointer.word++)&0xF0; AF.higher = mmu->ReadByte(stack_pointer.word++); m_clock = 3;}
 
 // Jump
-void Processor::JPnn() {program_counter.word = mmu->ReadWord(program_counter.word); m_clock = 3;}
+void Processor::JPnn() {program_counter.word = mmu->ReadWord(program_counter.word); m_clock = 4;}
 void Processor::JPHL() {program_counter.word = HL.word; m_clock = 1;}
 void Processor::JPNZnn() {m_clock = 3; if (!(AF.lower&0x80)) {program_counter.word = mmu->ReadWord(program_counter.word); ++m_clock;} else program_counter.word+=2;}
 void Processor::JPZnn() {m_clock = 3; if (AF.lower&0x80) {program_counter.word = mmu->ReadWord(program_counter.word); ++m_clock;} else program_counter.word+=2;}

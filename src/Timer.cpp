@@ -21,26 +21,17 @@ void Timer::Initialize(Processor* cpu_, MemoryManagementUnit* mmu_, Display* dis
 
 void Timer::Reset() {
 	clock = 0;
-    divider_clock = 0;
+    divider_clock = 0xAB;
     divider_clock_tracker = 0;
     counter_clock = 0;
     counter_clock_tracker = 0;
-    scanline = 0x90;
+    scanline = 0x00;
     scanline_tracker = 0;
 	
 	v_blank_triggered = false;
 }
 
 void Timer::Increment() {
-    if (divider_clock != mmu->zram[0x04]) {
-        divider_clock_tracker = 0;
-    }
-    if (counter_clock != mmu->zram[0x05]) {
-        counter_clock_tracker = 0;
-    }
-    divider_clock = mmu->zram[0x04];
-    counter_clock = mmu->zram[0x05];
-
     auto cycles = cpu->clock - clock; // Difference in clocks
 
     divider_clock_tracker += cycles;
@@ -119,10 +110,12 @@ void Timer::Increment() {
     }
 
     // Update timers
-    mmu->zram[0x04] = divider_clock;
-    mmu->zram[0x05] = counter_clock;
+    //mmu->zram[0x04] = divider_clock;
+    //mmu->zram[0x05] = counter_clock;
     mmu->zram[0xFF41&0xFF] = lcd_status;
-    mmu->zram[0xFF44&0xFF] = scanline;
+    //mmu->zram[0xFF44&0xFF] = scanline;
 
     clock = cpu->clock;
+
+    std::cout << "PC: " << std::hex << static_cast<unsigned int>(cpu->program_counter.word) << ": \tDIV - " << static_cast<unsigned int>(divider_clock) << ", \tDIV Tracker - " << static_cast<unsigned int>(divider_clock_tracker) << ", \tCNT - " << static_cast<unsigned int>(counter_clock) << ", \tCNT Tracker - " << static_cast<unsigned int>(counter_clock_tracker) << std::endl;
 }
