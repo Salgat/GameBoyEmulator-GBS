@@ -116,10 +116,10 @@ void Display::DrawBackground(uint8_t lcd_control, int line_number) {
 	
 	// Setup Palette for scanline
 	uint8_t palette = mmu->zram[0x47];
-	sf::Color white;
-	sf::Color light_gray;
-	sf::Color dark_gray;
-	sf::Color black;
+	sf::Color color0;
+	sf::Color color1;
+	sf::Color color2;
+	sf::Color color3;
 	for (uint8_t bits = 0; bits < 7; bits+=2) {
 		uint8_t bit0 = (palette & (1<<bits))>>bits;
 		uint8_t bit1 = (palette & (1<<(bits+1)))>>(bits+1);
@@ -127,23 +127,23 @@ void Display::DrawBackground(uint8_t lcd_control, int line_number) {
 
 		sf::Color new_color;
 		if (value == 0x00) {
-			new_color = kBlack;
-		} else if (value == 0x01) {
-			new_color = kDarkGray;
-		} else if (value == 0x02) {
-			new_color = kLightGray;
-		} else if (value == 0x03) {
 			new_color = kWhite;
+		} else if (value == 0x01) {
+			new_color = kLightGray;
+		} else if (value == 0x02) {
+			new_color = kDarkGray;
+		} else if (value == 0x03) {
+			new_color = kBlack;
 		}
 
 		if (bits == 0) {
-			black = new_color;
+			color0 = new_color;
 		} else if (bits == 2) {
-			dark_gray = new_color;
+			color1 = new_color;
 		} else if (bits == 4) {
-			light_gray = new_color;
+			color2 = new_color;
 		} else if (bits == 6) {
-			white = new_color;
+			color3 = new_color;
 		}
 	}
 	
@@ -163,13 +163,13 @@ void Display::DrawBackground(uint8_t lcd_control, int line_number) {
 		std::array<sf::Color, 8> color_pixels;
 		for (unsigned int index = 0; index < 8; ++index) {
 			if (line_pixels[index] == 0) {
-				color_pixels[index] = white;
+				color_pixels[index] = color0;
             } else if (line_pixels[index] == 1) {
-                color_pixels[index] = light_gray;
+                color_pixels[index] = color1;
             } else if (line_pixels[index] == 2) {
-                color_pixels[index] = dark_gray;
+                color_pixels[index] = color2;
             } else {
-                color_pixels[index] = black;
+                color_pixels[index] = color3;
             }
 		}
 		
@@ -221,36 +221,36 @@ void Display::DrawWindow(uint8_t lcd_control, int line_number) {
 	
 	// Setup Palette for scanline
 	uint8_t palette = mmu->zram[0x47];
-	sf::Color white;
-	sf::Color light_gray;
-	sf::Color dark_gray;
-	sf::Color black;
-	for (uint8_t bits = 0; bits < 7; bits+=2) {
-		uint8_t bit0 = (palette & (1<<bits))>>bits;
-		uint8_t bit1 = (palette & (1<<(bits+1)))>>(bits+1);
-		uint8_t value = bit0 + (bit1 << 1);
+    sf::Color color0;
+    sf::Color color1;
+    sf::Color color2;
+    sf::Color color3;
+    for (uint8_t bits = 0; bits < 7; bits+=2) {
+        uint8_t bit0 = (palette & (1<<bits))>>bits;
+        uint8_t bit1 = (palette & (1<<(bits+1)))>>(bits+1);
+        uint8_t value = bit0 + (bit1 << 1);
 
-		sf::Color new_color;
-		if (value == 0x00) {
-			new_color = kBlack;
-		} else if (value == 0x01) {
-			new_color = kDarkGray;
-		} else if (value == 0x02) {
-			new_color = kLightGray;
-		} else if (value == 0x03) {
-			new_color = kWhite;
-		}
+        sf::Color new_color;
+        if (value == 0x00) {
+            new_color = kWhite;
+        } else if (value == 0x01) {
+            new_color = kLightGray;
+        } else if (value == 0x02) {
+            new_color = kDarkGray;
+        } else if (value == 0x03) {
+            new_color = kBlack;
+        }
 
-		if (bits == 0) {
-			black = new_color;
-		} else if (bits == 2) {
-			dark_gray = new_color;
-		} else if (bits == 4) {
-			light_gray = new_color;
-		} else if (bits == 6) {
-			white = new_color;
-		}
-	}
+        if (bits == 0) {
+            color0 = new_color;
+        } else if (bits == 2) {
+            color1 = new_color;
+        } else if (bits == 4) {
+            color2 = new_color;
+        } else if (bits == 6) {
+            color3 = new_color;
+        }
+    }
 	
 	// For each tile, draw result
 	for (int x_tile = 0; x_tile < 32; ++x_tile) {
@@ -268,13 +268,13 @@ void Display::DrawWindow(uint8_t lcd_control, int line_number) {
 		std::array<sf::Color, 8> color_pixels;
 		for (unsigned int index = 0; index < 8; ++index) {
 			if (line_pixels[index] == 0) {
-				color_pixels[index] = white;
+				color_pixels[index] = color0;
             } else if (line_pixels[index] == 1) {
-                color_pixels[index] = light_gray;
+                color_pixels[index] = color1;
             } else if (line_pixels[index] == 2) {
-                color_pixels[index] = dark_gray;
+                color_pixels[index] = color2;
             } else {
-                color_pixels[index] = black;
+                color_pixels[index] = color3;
             }
 		}
 		
@@ -316,11 +316,11 @@ std::vector<Sprite> Display::ReadSprites(uint8_t lcd_control) {
 			new_sprite.x_flip = (new_sprite.attributes & 0x20) ? true : false;
 			new_sprite.y_flip = (new_sprite.attributes & 0x40) ? true : false;
 			new_sprite.draw_priority = (new_sprite.attributes & 0x80) ? true : false; // If true, don't draw over background/window colors 1-3
-			new_sprite.palette = (!(new_sprite.attributes & 0x10)) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use (0=OBP0, 1=OBP1)
+			new_sprite.palette = ((new_sprite.attributes & 0x10)) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use (0=OBP0, 1=OBP1)
 			new_sprite.height = sprite_height;
 
-            if (new_sprite.attributes & 0x10) {
-                //std::cout << "OBP1" << std::endl;
+            if (new_sprite.tile_number == 0xB0) {
+                //std::cout << "Palette: " << std::hex << static_cast<unsigned int>(new_sprite.palette) << std::endl;
             }
 
 			sprites.push_back(std::move(new_sprite));
@@ -356,49 +356,48 @@ void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Spri
 
 			// Setup Palette for scanline
 			uint8_t palette = sprites[index].palette;
-			sf::Color white;
-			sf::Color light_gray;
-			sf::Color dark_gray;
-			sf::Color black;
-			for (uint8_t bits = 0; bits < 7; bits+=2) {
-				uint8_t bit0 = (palette & (1<<bits))>>bits;
-				uint8_t bit1 = (palette & (1<<(bits+1)))>>(bits+1);
-				uint8_t value = bit0 + (bit1 << 1);
+            sf::Color color0;
+            sf::Color color1;
+            sf::Color color2;
+            sf::Color color3;
+            for (uint8_t bits = 0; bits < 7; bits+=2) {
+                uint8_t bit0 = (palette & (1<<bits))>>bits;
+                uint8_t bit1 = (palette & (1<<(bits+1)))>>(bits+1);
+                uint8_t value = bit0 + (bit1 << 1);
 
-				sf::Color new_color;
-				if (value == 0x00) {
-					new_color = kBlack;
-				} else if (value == 0x01) {
-					new_color = kDarkGray;
-				} else if (value == 0x02) {
-					new_color = kLightGray;
-				} else if (value == 0x03) {
-					new_color = kWhite;
-				}
+                sf::Color new_color;
+                if (value == 0x00) {
+                    new_color = kWhite;
+                } else if (value == 0x01) {
+                    new_color = kLightGray;
+                } else if (value == 0x02) {
+                    new_color = kDarkGray;
+                } else if (value == 0x03) {
+                    new_color = kBlack;
+                }
 
-				if (bits == 0) {
-					black = new_color;
-				} else if (bits == 2) {
-					dark_gray = new_color;
-				} else if (bits == 4) {
-					light_gray = new_color;
-				} else if (bits == 6) {
-					white = new_color;
-				}
-			}
+                if (bits == 0) {
+                    color0 = new_color;
+                } else if (bits == 2) {
+                    color1 = new_color;
+                } else if (bits == 4) {
+                    color2 = new_color;
+                } else if (bits == 6) {
+                    color3 = new_color;
+                }
+            }
 
 			// Convert color based on palette
 			std::array<sf::Color, 8> color_pixels;
 			for (unsigned int index = 0; index < 8; ++index) {
 				if (line_pixels[index] == 0) {
 					color_pixels[index] = kTransparent;
-					//color_pixels[index] = white;
 				} else if (line_pixels[index] == 1) {
-					color_pixels[index] = light_gray;
+					color_pixels[index] = color1;
 				} else if (line_pixels[index] == 2) {
-					color_pixels[index] = dark_gray;
+					color_pixels[index] = color2;
 				} else if (line_pixels[index] == 3) {
-					color_pixels[index] = black;
+					color_pixels[index] = color3;
 				}
 			}
 

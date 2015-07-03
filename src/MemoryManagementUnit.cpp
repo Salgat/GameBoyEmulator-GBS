@@ -451,7 +451,7 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                         if (mbc.rom_bank == 0x00 or mbc.rom_bank == 0x20 or mbc.rom_bank == 0x40 or mbc.rom_bank == 0x60) {
                             mbc.rom_bank += 1;
                         }
-                        std::cout << "Switched to ROM bank: " << std::hex << static_cast<unsigned int>(mbc.rom_bank) << std::endl;
+                        //std::cout << "Switched to ROM bank: " << std::hex << static_cast<unsigned int>(mbc.rom_bank) << std::endl;
                     }
 
                     mbc.rom_offset = mbc.rom_bank * 0x4000;
