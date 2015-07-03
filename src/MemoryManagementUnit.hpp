@@ -19,6 +19,8 @@ struct MemoryBankController {
 
 class Processor;
 class Input;
+class Display;
+class Timer;
 
 class MemoryManagementUnit {
 public:
@@ -44,7 +46,7 @@ public:
 
     MemoryManagementUnit();
 
-    void Initialize(Processor* cpu_, Input* input_);
+    void Initialize(Processor* cpu_, Input* input_, Display* display_, Timer* timer_);
     void Reset();
     void LoadRom(std::string rom_name);
 
@@ -57,6 +59,8 @@ public:
 private:
     Processor* cpu;
     Input* input;
+	Display* display;
+	Timer* timer;
 
     void TransferToOAM(uint16_t origin);
 };

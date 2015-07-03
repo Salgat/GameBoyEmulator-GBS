@@ -8,7 +8,7 @@
 
 GameBoy::GameBoy(sf::RenderWindow& window) {
     cpu.Initialize(&mmu);
-    mmu.Initialize(&cpu, &input);
+    mmu.Initialize(&cpu, &input, &display, &timer);
     display.Initialize(&cpu, &mmu);
     timer.Initialize(&cpu, &mmu, &display);
 	input.Initialize(&mmu, &window);
@@ -29,7 +29,7 @@ void GameBoy::Reset() {
 // Todo: Frame calling v-blank 195-196x per frame??
 std::pair<sf::Image, bool> GameBoy::RenderFrame() {
     bool running = (input.PollEvents())?true:false;
-	//cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
+	cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
 	sf::Image frame;
 	bool v_blank = false;
 	do {
@@ -47,11 +47,11 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
 			cpu.interrupt_master_enable = 0;
 			uint8_t interrupt_fired = mmu.interrupt_enable & if_memory_value;
 
-            if (interrupt_fired & 0x01) {if_memory_value &= 0XFE; v_blank = true; frame = display.RenderFrame(); cpu.RST40();}
-			else if (interrupt_fired & 0x02) {if_memory_value &= 0XFD; cpu.RST48();}
-			else if (interrupt_fired & 0x04) {if_memory_value &= 0XFB; cpu.RST50();}
-			else if (interrupt_fired & 0x08) {if_memory_value &= 0XF7; cpu.RST58();}
-			else if (interrupt_fired & 0x10) {if_memory_value &= 0XEF; cpu.RST60();}
+            if (interrupt_fired & 0x01) {if_memory_value &= 0XFE; mmu.WriteByte(0xFF0F, if_memory_value); cpu.RST40();}
+			else if (interrupt_fired & 0x02) {if_memory_value &= 0XFD; mmu.WriteByte(0xFF0F, if_memory_value); cpu.RST48();}
+			else if (interrupt_fired & 0x04) {if_memory_value &= 0XFB; mmu.WriteByte(0xFF0F, if_memory_value); cpu.RST50();}
+			else if (interrupt_fired & 0x08) {if_memory_value &= 0XF7; mmu.WriteByte(0xFF0F, if_memory_value); cpu.RST58();}
+			else if (interrupt_fired & 0x10) {if_memory_value &= 0XEF; mmu.WriteByte(0xFF0F, if_memory_value); cpu.RST60();}
 			else {cpu.interrupt_master_enable = 1;}
 			
 			mmu.WriteByte(0xFF0F, if_memory_value);
@@ -62,9 +62,12 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
         cpu.m_clock = 0;
 		
 		timer.Increment();
-	} while(!v_blank);	
-	//} while(cpu.clock < cpu.frame_clock);
-
+	//} while(!v_blank);	
+	} while(cpu.clock < cpu.frame_clock);
+	
+	if (!v_blank) {
+		frame = display.RenderFrame();
+	}
 	
 	return std::make_pair(frame, running);
 }

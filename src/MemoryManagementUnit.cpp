@@ -9,6 +9,7 @@
 #include <cmath>
 
 #include "Processor.hpp"
+#include "Timer.hpp"
 
 /**
  * Initialize memory
@@ -47,9 +48,11 @@ void MemoryManagementUnit::LoadRom(std::string rom_name) {
     Reset();
 }
 
-void MemoryManagementUnit::Initialize(Processor* cpu_, Input* input_) {
+void MemoryManagementUnit::Initialize(Processor* cpu_, Input* input_, Display* display_, Timer* timer_) {
     cpu = cpu_;
     input = input_;
+	display = display_;
+	timer = timer_;
 }
 
 void MemoryManagementUnit::Reset() {
@@ -228,7 +231,11 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
 								return 0;
 								
 							case 0x40: case 0x50: case 0x60: case 0x70:
-								return zram[address&0xFF];
+								if (address == 0xFF44) {
+									return timer->scanline;
+								} else {
+									return zram[address&0xFF];
+								}
 						}
                     }
             }
@@ -386,6 +393,8 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                                     // the address XX00-XX9F that is copied to FE00-FE9F
                                     uint16_t origin = static_cast<uint16_t>(value) << 8;
                                     TransferToOAM(origin);
+								} else if (address == 0xFF44) {
+									timer->scanline = 0;
                                 } else {
                                     zram[address&0xFF] = value;
                                 }
