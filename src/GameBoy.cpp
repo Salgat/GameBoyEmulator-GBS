@@ -34,12 +34,10 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
 	bool v_blank = false;
 	do {
         if (cpu.halt) {
-            cpu.m_clock = 1;
+            cpu.clock += 1;
         } else {
             cpu.ExecuteNextInstruction();
         }
-        cpu.clock += cpu.m_clock;
-        cpu.m_clock = 0;
 
         uint8_t if_memory_value = mmu.ReadByte(0xFF0F);
         if (mmu.interrupt_enable and cpu.interrupt_master_enable and if_memory_value) {
@@ -57,9 +55,6 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
 			mmu.WriteByte(0xFF0F, if_memory_value);
 			//cpu.interrupt_master_enable = 1; // Not sure if Halt only temporarily enables interrupts
 		}
-		
-		cpu.clock += cpu.m_clock;
-        cpu.m_clock = 0;
 		
 		timer.Increment();
 	//} while(!v_blank);	

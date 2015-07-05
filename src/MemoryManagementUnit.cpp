@@ -295,7 +295,7 @@ void MemoryManagementUnit::Reset() {
     mbc.rom_offset = 0x4000;
     ram_size = cartridge_rom[0x0149]; // RAM type available
 
-    mbc.rom_bank = 0;
+    mbc.rom_bank = 1;
     mbc.ram_bank = 0;
     mbc.ram_enabled = false;
     mbc.mode = 0;
@@ -308,27 +308,18 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
     switch(address & 0xF000) {
         // ROM bank 0
         case 0x0000:
-            if (bios_mode) {
-                if (address < 0x0100) {
-                    return bios[address];
-                } else if (cpu->program_counter.word == 0x0100) {
-                    bios_mode = false;
-                } else {
-                    return rom[address];
-                }
-            }
-
         case 0x1000:
         case 0x2000:
         case 0x3000:
             // ROM Bank 0 read
-            return rom[address];
+            return cartridge_rom[address];
 
         // Rom banks 1 and higher
         case 0x4000:
         case 0x5000:
         case 0x6000:
         case 0x7000:
+			//std::cout << "Reading at PC: " << std::hex << static_cast<unsigned int>(cpu->program_counter.word) << ", cartridge rom address and value: " << static_cast<unsigned int>(static_cast<unsigned int>(address&0x3FFF) + mbc.rom_offset) << ", " << static_cast<unsigned int>(cartridge_rom[static_cast<unsigned int>(address&0x3FFF) + mbc.rom_offset]) << std::endl;
             return cartridge_rom[static_cast<unsigned int>(address&0x3FFF) + mbc.rom_offset];
 
         // VRAM
@@ -339,7 +330,13 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
         // External RAM
         case 0xA000:
         case 0xB000:
-            return eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset];
+			if (!mbc.mbc1_banking_mode) {
+				//std::cout << "Reading at PC: " << std::hex << static_cast<unsigned int>(cpu->program_counter.word) << ", eram address and value: " << static_cast<unsigned int>(static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset) << ", " << static_cast<unsigned int>(eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset]) << std::endl;
+				return eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset];
+			} else {
+				//std::cout << "Reading at PC: " << std::hex << static_cast<unsigned int>(cpu->program_counter.word) << ", eram address and value: " << static_cast<unsigned int>(static_cast<unsigned int>(address & 0x1FFF)) << ", " << static_cast<unsigned int>(eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset]) << std::endl;
+				return eram[static_cast<unsigned int>(address & 0x1FFF)];
+			}
 
         // Working RAM and its' echo
         case 0xC000:
@@ -464,6 +461,7 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                     }
 
                     mbc.rom_offset = mbc.rom_bank * 0x4000;
+					//std::cout << "Switched to ROM bank and rom offset: " << std::hex << static_cast<unsigned int>(mbc.rom_bank) << ", " << static_cast<unsigned int>(mbc.rom_offset) << std::endl;
                 } else if (address < 0x6000) {
                     // Set either upper 3 bits of ROM bank number (ROM banking mode) or RAM bank number (RAM banking mode)
                     if (mbc.mbc1_banking_mode == false) {
@@ -474,6 +472,7 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                         }
                         //std::cout << "Switched to ROM bank: " << std::hex << static_cast<unsigned int>(mbc.rom_bank) << std::endl;
                         mbc.rom_offset = mbc.rom_bank * 0x4000;
+						//std::cout << "Switched to ROM bank and rom offset: " << std::hex << static_cast<unsigned int>(mbc.rom_bank) << ", " << static_cast<unsigned int>(mbc.rom_offset) << std::endl;
                     } else {
                         // RAM Banking mode
                         mbc.ram_bank = value & 0x03;
@@ -510,6 +509,7 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
         // External RAM
         case 0xA000:
         case 0xB000:
+			//std::cout << "Writing to ERAM Address with value: " << std::hex << static_cast<unsigned int>(mbc.ram_offset + (address & 0x1FFF)) << ", " << static_cast<unsigned int>(value) << std::endl;
             eram[mbc.ram_offset + (address & 0x1FFF)] = value;
             break;
 
@@ -564,7 +564,7 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
 
                                     case 2:
                                         if (value & 0x80) {
-                                            //std::cout << zram[0x01];
+                                            std::cout << "SERIAL: " << zram[0x01] << std::endl;;
                                         }
                                         break;
 

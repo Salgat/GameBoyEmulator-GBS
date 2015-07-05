@@ -33,7 +33,8 @@ int main() {
     //gameboy.LoadGame("cpu_instrs.gb");
     //gameboy.LoadGame("Madden '96.gb");
     //gameboy.LoadGame("LoZ.gb");
-
+	gameboy.LoadGame("Tamagotchi.gb");
+	
     //gameboy.LoadGame("01-special.gb");
     //gameboy.LoadGame("02-interrupts.gb");
     //gameboy.LoadGame("03-op sp,hl.gb");
@@ -47,7 +48,7 @@ int main() {
     //gameboy.LoadGame("11-op a,(hl).gb");
 
     //gameboy.LoadGame("instr_timing.gb");
-    gameboy.LoadGame("01-read_timing.gb");
+    //gameboy.LoadGame("01-read_timing.gb");
     //gameboy.LoadGame("02-write_timing.gb");
     //gameboy.LoadGame("03-modify_timing.gb");
 

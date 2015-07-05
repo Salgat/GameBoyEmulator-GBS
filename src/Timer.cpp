@@ -33,7 +33,7 @@ void Timer::Reset() {
 
 void Timer::Increment() {
     auto cycles = cpu->clock - clock; // Difference in clocks
-
+	
     divider_clock_tracker += cycles;
     if (divider_clock_tracker >= 64) {
         ++divider_clock;
@@ -117,5 +117,5 @@ void Timer::Increment() {
 
     clock = cpu->clock;
 
-    std::cout << "PC: " << std::hex << static_cast<unsigned int>(cpu->program_counter.word) << ": \tDIV - " << static_cast<unsigned int>(divider_clock) << ", \tDIV Tracker - " << static_cast<unsigned int>(divider_clock_tracker) << ", \tCNT - " << static_cast<unsigned int>(counter_clock) << ", \tCNT Tracker - " << static_cast<unsigned int>(counter_clock_tracker) << std::endl;
+    //std::cout << "PC: " << std::hex << static_cast<unsigned int>(cpu->program_counter.word) << ", CYCLES: " << static_cast<unsigned int>(cycles) << ": \tDIV - " << static_cast<unsigned int>(divider_clock) << ", \tDIV Tracker - " << static_cast<unsigned int>(divider_clock_tracker) << ", \tCNT - " << static_cast<unsigned int>(counter_clock) << ", \tCNT Tracker - " << static_cast<unsigned int>(counter_clock_tracker) << std::endl;
 }

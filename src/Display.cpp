@@ -154,10 +154,15 @@ void Display::DrawBackground(uint8_t lcd_control, int line_number) {
         if (tile_number > 127) {
             tile_number -= tile_set_offset;
         }
+		
+		
 	
 		//std::cout << "Scan line: " << static_cast<unsigned int>(line_number) << std::endl;
 		uint16_t tile_address = tile_set_address + tile_number*16;
 		auto line_pixels = DrawTilePattern(tile_address, tile_line);
+		//if (x_tile == 0 and line_number == 0) {
+		//	std::cout << "Tile number and address for 0,0: " << std::dec << tile_number << ", " << std::hex << tile_address << std::endl;
+		//}
 		
 		// Convert color based on palette
 		std::array<sf::Color, 8> color_pixels;
