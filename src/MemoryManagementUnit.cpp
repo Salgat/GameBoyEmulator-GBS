@@ -118,7 +118,6 @@ void MemoryManagementUnit::Reset() {
 
     // Setup configuration of controller type
     cartridge_type = cartridge_rom[0x0147];
-    std::cout << "Cartridge type: " << std::hex << static_cast<unsigned int>(cartridge_type) << std::endl;
     switch (cartridge_type) {
         case 0x00:
             // ROM only (no bank switching)
@@ -134,7 +133,6 @@ void MemoryManagementUnit::Reset() {
             break;
 
         case 0x03:
-            std::cout << "MBC1 + SRAM + BATTERY" << std::endl;
             mbc.mbc1 = true;
             mbc.sram = true;
             mbc.battery = true;
@@ -319,8 +317,7 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
         case 0x5000:
         case 0x6000:
         case 0x7000:
-			//std::cout << "Reading at PC: " << std::hex << static_cast<unsigned int>(cpu->program_counter.word) << ", cartridge rom address and value: " << static_cast<unsigned int>(static_cast<unsigned int>(address&0x3FFF) + mbc.rom_offset) << ", " << static_cast<unsigned int>(cartridge_rom[static_cast<unsigned int>(address&0x3FFF) + mbc.rom_offset]) << std::endl;
-            return cartridge_rom[static_cast<unsigned int>(address&0x3FFF) + mbc.rom_offset];
+			return cartridge_rom[static_cast<unsigned int>(address&0x3FFF) + mbc.rom_offset];
 
         // VRAM
         case 0x8000:
@@ -330,13 +327,55 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
         // External RAM
         case 0xA000:
         case 0xB000:
-			if (!mbc.mbc1_banking_mode) {
-				//std::cout << "Reading at PC: " << std::hex << static_cast<unsigned int>(cpu->program_counter.word) << ", eram address and value: " << static_cast<unsigned int>(static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset) << ", " << static_cast<unsigned int>(eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset]) << std::endl;
-				return eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset];
-			} else {
-				//std::cout << "Reading at PC: " << std::hex << static_cast<unsigned int>(cpu->program_counter.word) << ", eram address and value: " << static_cast<unsigned int>(static_cast<unsigned int>(address & 0x1FFF)) << ", " << static_cast<unsigned int>(eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset]) << std::endl;
-				return eram[static_cast<unsigned int>(address & 0x1FFF)];
-			}
+            if (mbc.mbc1) {
+                if (!mbc.mbc1_banking_mode) {
+                    return eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset];
+                } else {
+                    return eram[static_cast<unsigned int>(address & 0x1FFF)];
+                }
+            } else if (mbc.mbc7) {
+                // Assuming ram is enabled
+                switch (address) {
+                    case 0xA000:
+                    case 0xA060:
+                    case 0xA070:
+                        return 0;
+                    case 0xA080:
+                        return 0;
+                    case 0xA050:
+                        return 0;
+                    case 0xA040:
+                        return 0;
+                    case 0xA030:
+                        return 0;
+                    case 0xA020:
+                        return 0;
+                    default:
+                        return eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset];
+                }
+            } else if (!mbc.mbc3) {
+                return eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset];
+            } else {
+                // MBC3
+                if (mbc.ram_bank <= 0x03) {
+                    return eram[static_cast<unsigned int>(address & 0x1FFF) + mbc.ram_offset];
+                } else {
+                    switch (mbc.ram_bank) {
+                        case 0x08:
+                            return mbc.rtc.seconds;
+                        case 0x09:
+                            return mbc.rtc.minutes;
+                        case 0x0A:
+                            return mbc.rtc.hours;
+                        case 0x0B:
+                            return mbc.rtc.day_lower;
+                        case 0x0C:
+                            return mbc.rtc.day_upper;
+                        default:
+                            return 0x00;
+                    }
+                }
+            }
 
         // Working RAM and its' echo
         case 0xC000:
@@ -357,8 +396,6 @@ uint8_t MemoryManagementUnit::ReadByte(uint16_t address) {
                 // OAM (Object Attribute Memory for Sprites)
                 case 0xE00:
                     if ((address & 0xFF) <= 0x9F) {
-                        //if (address == 0xFE02)
-                            //std::cout << "Reading from FE02 for oam" << std::endl;
                         return oam[address & 0xFF];
                     } else {
                         // Outside range of OAM (empty)
@@ -441,10 +478,8 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                 if (address < 0x2000) {
                     // Enable RAM if == 0xXA, else disable
                     if ((value & 0x0F) == 0x0A) {
-                        //std::cout << "RAM enabled" << std::endl;
                         mbc.ram_enabled = true;
                     } else {
-                        //std::cout << "RAM disabled" << std::endl;
                         mbc.ram_enabled = false;
                     }
                 } else if (address < 0x4000) {
@@ -457,11 +492,9 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                         if (mbc.rom_bank == 0x00 or mbc.rom_bank == 0x20 or mbc.rom_bank == 0x40 or mbc.rom_bank == 0x60) {
                             mbc.rom_bank += 1;
                         }
-                        //std::cout << "Switched to ROM bank: " << std::hex << static_cast<unsigned int>(mbc.rom_bank) << std::endl;
                     }
 
                     mbc.rom_offset = mbc.rom_bank * 0x4000;
-					//std::cout << "Switched to ROM bank and rom offset: " << std::hex << static_cast<unsigned int>(mbc.rom_bank) << ", " << static_cast<unsigned int>(mbc.rom_offset) << std::endl;
                 } else if (address < 0x6000) {
                     // Set either upper 3 bits of ROM bank number (ROM banking mode) or RAM bank number (RAM banking mode)
                     if (mbc.mbc1_banking_mode == false) {
@@ -470,13 +503,10 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                         if (mbc.rom_bank == 0x00 or mbc.rom_bank == 0x20 or mbc.rom_bank == 0x40 or mbc.rom_bank == 0x60) {
                             mbc.rom_bank += 1;
                         }
-                        //std::cout << "Switched to ROM bank: " << std::hex << static_cast<unsigned int>(mbc.rom_bank) << std::endl;
                         mbc.rom_offset = mbc.rom_bank * 0x4000;
-						//std::cout << "Switched to ROM bank and rom offset: " << std::hex << static_cast<unsigned int>(mbc.rom_bank) << ", " << static_cast<unsigned int>(mbc.rom_offset) << std::endl;
                     } else {
                         // RAM Banking mode
                         mbc.ram_bank = value & 0x03;
-                        //std::cout << "Switched to RAM bank: " << std::hex << static_cast<unsigned int>(mbc.ram_bank) << std::endl;
                         mbc.ram_offset = mbc.ram_bank * 0x2000; // Each RAM bank has a maximum size of 8KB
                     }
                 } else {
@@ -489,13 +519,47 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                         mbc.mbc1_banking_mode = true;
                     }
                 }
-            } else if (mbc.mbc2) {
-                if (address < 0x1000) {
+            } else if (mbc.mbc3) {
+                if (address < 0x2000) {
+                    // Enable RAM if == 0xXA, else disable
+                    if ((value & 0x0F) == 0x0A) {
+                        mbc.ram_enabled = true;
+                    } else {
+                        mbc.ram_enabled = false;
+                    }
+                } else if (address < 0x4000) {
+                    // ROM Bank Number
+                    if (value == 0) {
+                        mbc.rom_bank = 1;
+                    } else {
+                        mbc.rom_bank = value & 0x7F;
+                    }
 
-                } else if (address >= 0x2100 and address < 0x2200) {
+                    mbc.rom_offset = mbc.rom_bank * 0x4000;
+                } else if (address < 0x6000) {
+                    // Select either the 4 RAM banks or the RTC register mapping
+                    if (value <= 0x03) {
+                        mbc.ram_bank = value;
+                        mbc.ram_offset = mbc.ram_bank * 0x2000;
+                    } else {
+                        // RTC register mapping
+                        mbc.ram_bank = value & 0x0F;
+                    }
+                } else if (address < 0x8000) {
+                    // Latch Clock Data
+                    if (mbc.latch_data == 0x00 and value == 0x01) {
+                        // Latch the clock data (update RTC registers with current time)
+                        mbc.latch_data = 0x01;
 
-                } else {
-                    // Ignore write
+                        // Todo: Read computer's time using <chrono>
+                        mbc.rtc.day_upper = 0;
+                        mbc.rtc.day_lower = 0;
+                        mbc.rtc.hours = 0;
+                        mbc.rtc.minutes = 0;
+                        mbc.rtc.seconds = 0;
+                    } else {
+                        mbc.latch_data = value;
+                    }
                 }
             }
             break;
@@ -509,8 +573,15 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
         // External RAM
         case 0xA000:
         case 0xB000:
-			//std::cout << "Writing to ERAM Address with value: " << std::hex << static_cast<unsigned int>(mbc.ram_offset + (address & 0x1FFF)) << ", " << static_cast<unsigned int>(value) << std::endl;
-            eram[mbc.ram_offset + (address & 0x1FFF)] = value;
+			if (mbc.mbc1) {
+                eram[mbc.ram_offset + (address & 0x1FFF)] = value;
+            } else if (mbc.mbc3) {
+                if (mbc.ram_bank <= 0x03) {
+                    eram[mbc.ram_offset + (address & 0x1FFF)] = value;
+                } else {
+                    // TODO: Implement writing to RTC
+                }
+            }
             break;
 
         // Work RAM and echo

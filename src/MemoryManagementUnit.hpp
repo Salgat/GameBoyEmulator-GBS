@@ -27,6 +27,7 @@ struct MemoryBankController {
     bool mbc2 = false;
     bool mmm01 = false;
     bool mbc3 = false;
+    uint8_t latch_data = 0;
     bool mbc5 = false;
     bool mbc7 = false;
     bool tama5 = false;
@@ -37,6 +38,17 @@ struct MemoryBankController {
     bool timer = false;
     bool rumble = false;
     bool camera = false;
+
+    struct RTC {
+        uint8_t seconds = 0; // 0-59
+        uint8_t minutes = 0; // 0-59
+        uint8_t hours = 0;   // 0-23
+        uint8_t day_lower = 0; // lower 8 bits of day (0-255)
+        uint8_t day_upper = 0; // higher 1 bit of day, carry bit, halt flag
+                               // Bit 0: day counter MSB
+                               // Bit 6: Halt (0=active, 1=stop timer)
+                               // Bit 7: Day Counter Carry Bit (1=overflow)
+    } rtc;
 };
 
 class Processor;

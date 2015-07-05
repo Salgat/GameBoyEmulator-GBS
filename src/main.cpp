@@ -27,12 +27,11 @@ int main() {
     //gameboy.LoadGame("opus5.gb");
     //gameboy.LoadGame("ttt.gb");
     //gameboy.LoadGame("Tetris.gb");
-    //gameboy.LoadGame("PokemonRed.gb");
+    gameboy.LoadGame("PokemonRed.gb");
     //gameboy.LoadGame("SML.gb");
     //gameboy.LoadGame("SML2.gb");
     //gameboy.LoadGame("cpu_instrs.gb");
-    //gameboy.LoadGame("Madden '96.gb");
-    gameboy.LoadGame("LoZ.gb");
+    //gameboy.LoadGame("LoZ.gb");
 	//gameboy.LoadGame("Tamagotchi.gb");
 	
     //gameboy.LoadGame("01-special.gb");

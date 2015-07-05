@@ -1,0 +1,72 @@
+09 troubleshooting
+----------------------
+loops until it finally hits PC: 0xC000
+call @ 0xC24C to 0xCE31 draws the first line
+
+The big calls start at PC: 0xC246 (4 calls), the third calling the draw routine
+
+For whatever reason, it loses position and is trying to execute C24D instead of C24C, so need to find which instruction is screwing up the program_counter
+
+
+---------------
+01-special
+
+PC = 0xC31A is where POP AF test starts
+
+PC = 0xC359 is where the "test has passed jump" is located (specifically the "call 0xC0C2" located at PC = 0xC18F, and more specifically PC = 0xC7C8's call to 0xC3FD)
+
+crc_update is at PC = 0xC33F
+
+X at PC = 0xC33D, the daa instruction (0x27) is setting the flag to 0x00, not 0x80 like it should.
+
+From c06a to c06c, the SRL B instruction should be flag = 0x10 instead of 0x00
+	- Instructions need all binary operations to be wrapped in parenthesis due to their low priority! (such as (0xF&AF.lower))
+	
+At PC = 0xC356, check_crc $6A9F8D8A is called
+	- The value at 0xFF80 at this point should be 0x75, but it's loading into A the value 0x95?
+	
+----------------------
+01
+	- Passed
+
+02
+	- HALT test #5 fails
+	
+03
+	- Passed
+
+04
+	- Passed
+	
+05
+	- Passed
+	
+06
+	- Passed
+	
+07
+	- Passed
+	
+08
+	- Passed
+	
+09
+	- Passed
+	
+10	
+	- Passed
+
+11
+	- Passed
+	
+	
+-----------------------------
+
+Implement graphics now. When Scanline is incremented in the timer, call "RenderScanLine" or however it works using the implementation.
+Get Background, Window, and Sprite finished, including inversion, flipping, etc.
+
+----------------------------
+
+Madden '96:
+	- Graphics start drawing at PC: 0x0343's call to 0x16DF
+	- 
