@@ -195,7 +195,7 @@ void Processor::ExecuteNextInstruction() {
 							  << "HL  : " << std::setw(8) <<  static_cast<unsigned int>(HL.word) << "\tCNTR: " << std::setw(8) <<  0 << std::endl
 							  << "SP  : " << std::setw(8) <<  static_cast<unsigned int>(stack_pointer.word) << "\tIE  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_enable) << std::endl
 							  << "PC  : " << std::setw(8) <<  static_cast<unsigned int>(program_counter.word-1) << "\tIF  : " << std::setw(8) <<  static_cast<unsigned int>(mmu->interrupt_flag) << std::endl
-							  << "IME : " << std::setw(8) <<  static_cast<unsigned int>(interrupt_master_enable) << "\tCLK : " << std::setw(8) <<  static_cast<unsigned int>(clock) << std::endl
+							  << "IME : " << std::setw(8) <<  static_cast<unsigned int>(interrupt_master_enable) << "\tROM : " << std::setw(8) <<  static_cast<unsigned int>(mmu->mbc.rom_bank) << std::endl
 							  << "TIMA: " << std::setw(8) << static_cast<unsigned int>(mmu->zram[0xFF05&0xFF]) << "\tTAC : " << std::setw(8) <<  static_cast<unsigned int>(mmu->zram[0xFF07&0xFF]) << std::endl
 							  << "OPC : " << std::setw(8) << static_cast<unsigned int>(memory_value) << std::endl;
 	}
@@ -266,6 +266,8 @@ void Processor::XX() {
 		std::cout << std::hex << static_cast<unsigned int>(opcode_before) << " ";
 	}
 	std::cout << std::hex << static_cast<unsigned int>(opcode) << std::endl;
+
+    exit(EXIT_FAILURE);
 	
 }
 

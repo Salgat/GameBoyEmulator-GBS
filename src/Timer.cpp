@@ -68,19 +68,23 @@ void Timer::Increment() {
     }
 
     // Also keep track of scanline (0xFF44)
-	scanline_tracker += cycles;
-	if (scanline_tracker >= 456/4) { // Check if this is >=  or just >
-		++scanline;
-        scanline_tracker -= 456/4;
-        if (scanline < 144) {
-            display->RenderScanline(scanline);
-		} else if (scanline > 153) {
-            display->RenderScanline(0);
+    uint8_t lcd_control = mmu->zram[0xFF40&0xFF];
+    if (lcd_control & 0x80) {
+        // Only update scanline if lcd is enabled
+        scanline_tracker += cycles;
+        if (scanline_tracker >= 456/4) { // Check if this is >=  or just >
+            ++scanline;
+            scanline_tracker -= 456/4;
+            if (scanline < 144) {
+                display->RenderScanline(scanline);
+            } else if (scanline > 153) {
+                display->RenderScanline(0);
+            }
         }
-    }
-    if (scanline > 153) {
-        scanline = 0;
-		v_blank_triggered = false;
+        if (scanline > 153) {
+            scanline = 0;
+            v_blank_triggered = false;
+        }
     }
 
     // Update LCD Status based on scanline and timing	
