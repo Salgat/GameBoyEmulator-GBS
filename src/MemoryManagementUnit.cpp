@@ -112,15 +112,17 @@ void MemoryManagementUnit::Reset() {
     hram[0xFFFF&0xFF] = 0x00; interrupt_enable = 0x00; // the two are equivalent
 	interrupt_flag = 0xE1; // 0xFF0F
 
+	game_title = "";
+	for (uint16_t address = 0x0134; address <= 0x0143 and cartridge_rom[address] != 0; ++address) {
+		game_title.push_back(cartridge_rom[address]);
+	}
+	
     // Setup ROM banks and RAM
-
-
     // Setup controller
     mbc = MemoryBankController();
 
     // Setup configuration of controller type
     cartridge_type = cartridge_rom[0x0147];
-	std::cout << "Cartridge type: " << std::hex << static_cast<unsigned int>(cartridge_type) << std::endl;
     switch (cartridge_type) {
         case 0x00:
             // ROM only (no bank switching)

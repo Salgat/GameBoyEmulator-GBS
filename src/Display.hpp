@@ -18,6 +18,7 @@
 
 class Processor;
 class MemoryManagementUnit;
+class Input;
 
 /**
  * Defines each of the 40 sprites in the OAM sprite table
@@ -39,6 +40,8 @@ struct Sprite {
  * Handles rendering to the "screen".
  */
 class Display {
+	friend class Input;
+
     sf::Color const kWhite       = sf::Color(255, 255, 255, 255);
     sf::Color const kLightGray   = sf::Color(192, 192, 192, 255);
     sf::Color const kDarkGray    = sf::Color( 96,  96,  96, 255);

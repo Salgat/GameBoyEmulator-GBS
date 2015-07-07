@@ -6,12 +6,14 @@
 
 #include <iostream>
 
-GameBoy::GameBoy(sf::RenderWindow& window) {
+GameBoy::GameBoy(sf::RenderWindow& window)
+	: screen_size(1)
+	, game_speed(1) {
     cpu.Initialize(&mmu);
     mmu.Initialize(&cpu, &input, &display, &timer);
     display.Initialize(&cpu, &mmu);
     timer.Initialize(&cpu, &mmu, &display);
-	input.Initialize(&mmu, &window);
+	input.Initialize(&mmu, &display, &timer, &cpu, this, &window);
 
 	Reset();
 }
@@ -30,7 +32,6 @@ void GameBoy::Reset() {
 std::pair<sf::Image, bool> GameBoy::RenderFrame() {
     bool running = (input.PollEvents())?true:false;
 	cpu.frame_clock = cpu.clock + 17556; // Number of cycles/4 for one frame before v-blank
-	sf::Image frame;
 	bool v_blank = false;
 	do {
         if (cpu.halt) {
@@ -53,11 +54,9 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
 			else {cpu.interrupt_master_enable = 1;}
 			
 			mmu.WriteByte(0xFF0F, if_memory_value);
-			//cpu.interrupt_master_enable = 1; // Not sure if Halt only temporarily enables interrupts
 		}
 		
 		timer.Increment();
-	//} while(!v_blank);	
 	} while(cpu.clock < cpu.frame_clock);
 	
 	if (!v_blank) {

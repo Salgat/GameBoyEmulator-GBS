@@ -24,15 +24,17 @@
  */
 class GameBoy {
 public:
+	int screen_size; // Multiplier
+	int game_speed; // Multiplier
+
     GameBoy(sf::RenderWindow& window);
-    //~GameBoy();
 
     void Reset();
     std::pair<sf::Image, bool> RenderFrame();
     void LoadGame(std::string rom_name);
 
 //private:
-    sf::Image last_frame;
+    sf::Image frame;
 
     Processor cpu;
     MemoryManagementUnit mmu;

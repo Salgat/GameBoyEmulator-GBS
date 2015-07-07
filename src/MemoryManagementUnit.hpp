@@ -74,6 +74,8 @@ public:
     uint8_t cartridge_type; // Determines which memory bank controller is used
     uint8_t ram_size; // 0: None, 1: 1 bank @ 2KB, 2: 1 bank @ 8KB, 3: 4 banks @ 32KB total
     MemoryBankController mbc;
+	
+	std::string game_title;
 
     MemoryManagementUnit();
 
