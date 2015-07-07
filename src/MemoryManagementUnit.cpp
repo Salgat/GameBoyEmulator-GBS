@@ -1,15 +1,17 @@
 //
 // Created by Austin on 6/11/2015.
 //
-#include "MemoryManagementUnit.hpp"
-#include "Input.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <cmath>
 
+
+#include "MemoryManagementUnit.hpp"
+#include "Input.hpp"
 #include "Processor.hpp"
 #include "Timer.hpp"
+#include "Display.hpp"
 
 /**
  * Initialize memory
@@ -118,6 +120,7 @@ void MemoryManagementUnit::Reset() {
 
     // Setup configuration of controller type
     cartridge_type = cartridge_rom[0x0147];
+	std::cout << "Cartridge type: " << std::hex << static_cast<unsigned int>(cartridge_type) << std::endl;
     switch (cartridge_type) {
         case 0x00:
             // ROM only (no bank switching)
@@ -605,9 +608,8 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                 // OAM (Object Attribute Memory for Sprites)
                 case 0xE00:
                     if ((address & 0xFF) < 0xA0) {
-                        //if (address == 0xFE02)
-                            //std::cout << "Writing to FE02 for oam: " << std::hex << static_cast<unsigned int>(value) << std::endl;
-                        oam[address & 0xFF] = value;
+						oam[address & 0xFF] = value;
+						display->UpdateSprite(address & 0xFF, value);
                     }
                     break;
 
@@ -635,7 +637,7 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
 
                                     case 2:
                                         if (value & 0x80) {
-                                            std::cout << "SERIAL: " << zram[0x01] << std::endl;;
+                                            //std::cout << "SERIAL: " << zram[0x01] << std::endl;;
                                         }
                                         break;
 
@@ -692,5 +694,6 @@ void MemoryManagementUnit::TransferToOAM(uint16_t origin) {
     for (uint16_t offset = 0; offset < 0xA0; ++offset) {
         uint8_t value = ReadByte(origin+offset);
         oam[offset] = value;
+		display->UpdateSprite(offset, value);
     }
 }

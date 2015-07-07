@@ -23,16 +23,16 @@ class MemoryManagementUnit;
  * Defines each of the 40 sprites in the OAM sprite table
  */
 struct Sprite {
-    int x;
-    int y;
-    int tile_number;
-    uint8_t attributes;
+    int x = 0;
+    int y = 0;
+    int tile_number = 0;
+    uint8_t attributes = 0;
 
-    bool x_flip;
-    bool y_flip;
-    bool draw_priority;
-    uint8_t palette;
-    int height;
+    bool x_flip = false;
+    bool y_flip = false;
+    bool draw_priority = false;
+    uint8_t palette = 0x00;
+    int height = 8;
 };
 
 /**
@@ -53,6 +53,8 @@ public:
 	sf::Image RenderFrame();
     void RenderScanline(uint8_t line_number);
 	
+	void UpdateSprite(uint8_t sprite_address, uint8_t value);
+	
 private:
     Processor* cpu;
     MemoryManagementUnit* mmu;
@@ -65,12 +67,14 @@ private:
     std::vector<sf::Color> sprite_map;
     std::vector<bool> show_sprite;
     std::vector<bool> sprite_priority; // 0 = False, 1 = True
+	std::array<Sprite, 40> sprite_array;
 
     std::array<int, 8> DrawTilePattern(uint16_t tile_address, int tile_line);
 	void DrawBackground(uint8_t lcd_control, int line_number);
     void DrawWindow(uint8_t lcd_control, int line_number);
-    std::vector<Sprite> ReadSprites(uint8_t lcd_control);
-    void DrawSprites(uint8_t lcd_control, int line_number, std::vector<Sprite> const& sprites);
+	void DrawBackgroundOrWindow(uint8_t lcd_control, int line_number, bool is_background);
+    std::vector<Sprite*> ReadSprites(uint8_t lcd_control);
+    void DrawSprites(uint8_t lcd_control, int line_number, std::vector<Sprite*> const& sprites);
 };
 
 #endif //GAMEBOYEMULATOR_DISPLAY_HPP

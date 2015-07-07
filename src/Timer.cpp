@@ -85,7 +85,10 @@ void Timer::Increment() {
             scanline = 0;
             v_blank_triggered = false;
         }
-    }
+    } else {
+		scanline = 0;
+		scanline_tracker = 0;
+	}
 
     // Update LCD Status based on scanline and timing	
     uint8_t lcd_status = mmu->zram[0xFF41&0xFF] & 0xF8; // Last 3 bits are updated here

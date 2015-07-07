@@ -87,9 +87,24 @@ void Display::RenderScanline(uint8_t line_number) {
  * Updates Background vector for current scanline of background.
  */
 void Display::DrawBackground(uint8_t lcd_control, int line_number) {
+    DrawBackgroundOrWindow(lcd_control, line_number, true);
+}
+
+/**
+ * Updates frame buffer for current scanline of Window.
+ */
+void Display::DrawWindow(uint8_t lcd_control, int line_number) {
+	DrawBackgroundOrWindow(lcd_control, line_number, false);
+}
+
+/**
+ * Draws either the background or window based on given parameter.
+ */
+void Display::DrawBackgroundOrWindow(uint8_t lcd_control, int line_number, bool is_background) {
     // Determine if using tile map 0 or 1
     uint16_t tile_map_address;
-    if ((lcd_control & 0x08) == 0) {
+	uint8_t test_bit = is_background ? 0x08 : 0x40;
+    if ((lcd_control & test_bit) == 0) {
         tile_map_address = 0x9800; // tile map #0
     } else {
         tile_map_address = 0x9c00; // tile map #1
@@ -108,11 +123,11 @@ void Display::DrawBackground(uint8_t lcd_control, int line_number) {
 
     // Determine which tile row and line of tile to draw
     // First find which tile the scanline is on
-	int scroll_y = mmu->ReadByte(0xFF42);
-	int scroll_y_tile = std::floor(scroll_y/8.0);// Sets scroll_y to be divisible by 8
-	int row = static_cast<int>(std::floor(static_cast<double>(line_number+scroll_y) / 8.0)) % 32;
-	int tile_line = (scroll_y + line_number) % 8; // Which y tile (8x8 or 8x16) on background
-												  // TODO: Change modulus to be either 8 or 16
+	int scroll_y = is_background ? mmu->ReadByte(0xFF42) : mmu->ReadByte(0xFF4A);
+	int scroll_y_tile = std::floor(scroll_y/8.0); // Sets scroll_y to be divisible by 8
+	int row = is_background ? static_cast<int>(std::floor(static_cast<double>(line_number+scroll_y) / 8.0)) % 32 : static_cast<int>(std::floor(static_cast<double>(line_number) / 8.0)) % 32;
+	int tile_line = is_background ? (scroll_y + line_number) % 8 : (line_number) % 8; // Which y tile (8x8 or 8x16) on background
+																				   // TODO: Change modulus to be either 8 or 16
 	
 	// Setup Palette for scanline
 	uint8_t palette = mmu->zram[0x47];
@@ -149,20 +164,13 @@ void Display::DrawBackground(uint8_t lcd_control, int line_number) {
 	
 	// For each tile, draw result
 	for (int x_tile = 0; x_tile < 32; ++x_tile) {
-		//std::cout << "Tile Number from address: " << tile_map_address + (32*row+x_tile) << std::endl;
 		int tile_number = mmu->ReadByte(tile_map_address + (32*row+x_tile));
         if (tile_number > 127) {
             tile_number -= tile_set_offset;
         }
 		
-		
-	
-		//std::cout << "Scan line: " << static_cast<unsigned int>(line_number) << std::endl;
 		uint16_t tile_address = tile_set_address + tile_number*16;
 		auto line_pixels = DrawTilePattern(tile_address, tile_line);
-		//if (x_tile == 0 and line_number == 0) {
-		//	std::cout << "Tile number and address for 0,0: " << std::dec << tile_number << ", " << std::hex << tile_address << std::endl;
-		//}
 		
 		// Convert color based on palette
 		std::array<sf::Color, 8> color_pixels;
@@ -181,117 +189,17 @@ void Display::DrawBackground(uint8_t lcd_control, int line_number) {
 		// Write pixels to background map
 		int bit = 7;
 		for (auto pixel : color_pixels) {
-		    int scroll_x = mmu->ReadByte(0xFF43);
-			unsigned int x_position = (x_tile*8 + bit + 256-scroll_x) % 256;
-			unsigned int y_position = line_number;
-			background[y_position*256+x_position] = pixel;
-			show_background[y_position*256+x_position] = true;
-			
-			--bit;
-		}
-	}
-}
-
-/**
- * Updates frame buffer for current scanline of Window.
- */
-void Display::DrawWindow(uint8_t lcd_control, int line_number) {
-	// Determine if using tile map 0 or 1
-    uint16_t tile_map_address;
-    if ((lcd_control & 0x40) == 0) {
-        tile_map_address = 0x9800; // tile map #0
-    } else {
-        tile_map_address = 0x9c00; // tile map #1
-    }
-
-    // Determine if using tile set 0 or 1
-    int tile_set_address;
-    int tile_set_offset;
-    if ((lcd_control & 0x10) == 0) {
-        tile_set_address = 0x9000; // tile set #0
-        tile_set_offset = 256;
-    } else {
-        tile_set_address = 0x8000; // tile set #1
-        tile_set_offset = 0;
-    }
-
-    // Determine which tile row and line of tile to draw
-    // First find which tile the scanline is on
-	int scroll_y = mmu->ReadByte(0xFF4A);
-	int scroll_y_tile = std::floor(scroll_y/8.0);// Sets scroll_y to be divisible by 8
-	//int row = (line_number + scroll_y_tile) % 32; // Which row (32x32) on background
-	int row = static_cast<int>(std::floor(static_cast<double>(line_number) / 8.0)) % 32;
-	int tile_line = (line_number) % 8; // Which y tile (8x8 or 8x16) on background
-												  // TODO: Change modulus to be either 8 or 16
-	
-	// Setup Palette for scanline
-	uint8_t palette = mmu->zram[0x47];
-    sf::Color color0;
-    sf::Color color1;
-    sf::Color color2;
-    sf::Color color3;
-    for (uint8_t bits = 0; bits < 7; bits+=2) {
-        uint8_t bit0 = (palette & (1<<bits))>>bits;
-        uint8_t bit1 = (palette & (1<<(bits+1)))>>(bits+1);
-        uint8_t value = bit0 + (bit1 << 1);
-
-        sf::Color new_color;
-        if (value == 0x00) {
-            new_color = kWhite;
-        } else if (value == 0x01) {
-            new_color = kLightGray;
-        } else if (value == 0x02) {
-            new_color = kDarkGray;
-        } else if (value == 0x03) {
-            new_color = kBlack;
-        }
-
-        if (bits == 0) {
-            color0 = new_color;
-        } else if (bits == 2) {
-            color1 = new_color;
-        } else if (bits == 4) {
-            color2 = new_color;
-        } else if (bits == 6) {
-            color3 = new_color;
-        }
-    }
-	
-	// For each tile, draw result
-	for (int x_tile = 0; x_tile < 32; ++x_tile) {
-		//std::cout << "Tile Number from address: " << tile_map_address + (32*row+x_tile) << std::endl;
-		int tile_number = mmu->ReadByte(tile_map_address + (32*row+x_tile));
-        if (tile_number > 127) {
-            tile_number -= tile_set_offset;
-        }
-	
-		//std::cout << "Scan line: " << static_cast<unsigned int>(line_number) << std::endl;
-		uint16_t tile_address = tile_set_address + tile_number*16;
-		auto line_pixels = DrawTilePattern(tile_address, tile_line);
-		
-		// Convert color based on palette
-		std::array<sf::Color, 8> color_pixels;
-		for (unsigned int index = 0; index < 8; ++index) {
-			if (line_pixels[index] == 0) {
-				color_pixels[index] = color0;
-            } else if (line_pixels[index] == 1) {
-                color_pixels[index] = color1;
-            } else if (line_pixels[index] == 2) {
-                color_pixels[index] = color2;
-            } else {
-                color_pixels[index] = color3;
-            }
-		}
-		
-		// Write pixels to window map
-		int bit = 7;
-		for (auto pixel : color_pixels) {
-		    int scroll_x = mmu->ReadByte(0xFF4B);
-			unsigned int x_position = (x_tile*8+bit) + scroll_x - 8;
-			unsigned int y_position = line_number+16 + scroll_y - 16;
+		    int scroll_x = is_background ? mmu->ReadByte(0xFF43) : mmu->ReadByte(0xFF4B);
+			unsigned int x_position = is_background ? (x_tile*8 + bit + 256-scroll_x) % 256 : (x_tile*8+bit) + scroll_x - 8;;
+			unsigned int y_position = is_background ? line_number : line_number+16 + scroll_y - 16;
 			if (x_position < 256 and y_position < 256) {
-				window[y_position*256+x_position] = pixel;
-				show_window[y_position*256+x_position] = true;
+				if (is_background) {
+					background[y_position*256+x_position] = pixel;
+					show_background[y_position*256+x_position] = true;
+				} else {
+					window[y_position*256+x_position] = pixel;
+					show_window[y_position*256+x_position] = true;
+				}
 			}
 			
 			--bit;
@@ -302,65 +210,50 @@ void Display::DrawWindow(uint8_t lcd_control, int line_number) {
 /**
  * Returns all Sprites in OAM (0xFE00-0xFE9F).
  */
-std::vector<Sprite> Display::ReadSprites(uint8_t lcd_control) {
-	std::vector<Sprite> sprites;
+std::vector<Sprite*> Display::ReadSprites(uint8_t lcd_control) {
+	std::vector<Sprite*> sprites;
 
 	uint16_t oam_table_address = 0xFE00;
 	uint8_t sprite_height = (lcd_control & 0x04)?16:8; // Height of each sprite in pixels
 	for (int index = 0; index < 40; ++index) {
-		int y_position = mmu->ReadByte(oam_table_address+index*4+0);
-		int x_position = mmu->ReadByte(oam_table_address+index*4+1);
+		int y_position = sprite_array[index].y;
+		int x_position = sprite_array[index].x;
 
 		// Test if within screen view
-		if (y_position-16 >= 0 and y_position-16 < 144 and x_position-8 >= 0 and x_position-8 < 160) {
-			Sprite new_sprite;
-			new_sprite.y = y_position-16;
-			new_sprite.x = x_position;
-			new_sprite.tile_number = mmu->ReadByte(oam_table_address + index * 4 + 2);
-			new_sprite.attributes = mmu->ReadByte(oam_table_address + index * 4 + 3);
-			new_sprite.x_flip = (new_sprite.attributes & 0x20) ? true : false;
-			new_sprite.y_flip = (new_sprite.attributes & 0x40) ? true : false;
-			new_sprite.draw_priority = (new_sprite.attributes & 0x80) ? true : false; // If true, don't draw over background/window colors 1-3
-			new_sprite.palette = ((new_sprite.attributes & 0x10)) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use (0=OBP0, 1=OBP1)
-			new_sprite.height = sprite_height;
-
-            if (new_sprite.tile_number == 0xB0) {
-                //std::cout << "Palette: " << std::hex << static_cast<unsigned int>(new_sprite.palette) << std::endl;
-            }
-
-			sprites.push_back(std::move(new_sprite));
+		if (y_position >= 0 and y_position < 144 and x_position-8 >= 0 and x_position-8 < 160) {
+			sprites.push_back(&(sprite_array[index]));
 		}
 	}
 
 	// Sort each sprite by its x position (the lowest x position is drawn last)
 	// TODO: Add a condition where sprites with the same X and sorted by their OAM address
 	std::sort(sprites.begin(), sprites.end(),
-			  [](Sprite const& first, Sprite const& second) -> bool {
-				  return first.x < second.x;
+			  [](Sprite const* first, Sprite const* second) -> bool {
+				  return first->x < second->x;
 			  });
 
 	return sprites;
 }
 
-void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Sprite> const& sprites) {
+void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Sprite*> const& sprites) {
 	uint16_t sprite_pattern_table = 0x8000; // Unsigned numbering
 
 	int drawn_count = 0;
     for (int index = sprites.size()-1; index >= 0; --index) {
 		if (drawn_count >= 10) break; // Limit to drawing the first 10 sprites of highest priority
 		//std::cout << "Testing for index: " << index << std::endl;
-		if (sprites[index].y + sprites[index].height > line_number and sprites[index].y <= line_number) {
+		if (sprites[index]->y + sprites[index]->height > line_number and sprites[index]->y <= line_number) {
 			//std::cout << "Found sprite on scanline: " << line_number << std::endl;
 			// If on the scanline, draw the sprite's current line
-			uint16_t tile_address = sprite_pattern_table + sprites[index].tile_number*16;
-			int tile_line = line_number-sprites[index].y;
-			if (sprites[index].y_flip) {
-				tile_line = sprites[index].height - 1 - tile_line;
+			uint16_t tile_address = sprite_pattern_table + sprites[index]->tile_number*16;
+			int tile_line = line_number-sprites[index]->y;
+			if (sprites[index]->y_flip) {
+				tile_line = sprites[index]->height - 1 - tile_line;
 			}
 			auto line_pixels = DrawTilePattern(tile_address, tile_line);
 
 			// Setup Palette for scanline
-			uint8_t palette = sprites[index].palette;
+			uint8_t palette = sprites[index]->palette;
             sf::Color color0;
             sf::Color color1;
             sf::Color color2;
@@ -409,11 +302,11 @@ void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Spri
 			// Write pixels to sprite map
 			int bit = 7;
 			for (auto pixel : color_pixels) {
-				unsigned int x_position = (sprites[index].x_flip)?sprites[index].x+7-bit-8:sprites[index].x+bit - 8;
+				unsigned int x_position = (sprites[index]->x_flip)?sprites[index]->x+7-bit-8:sprites[index]->x+bit - 8;
 				unsigned int y_position = line_number;
 
 				if (pixel.r != 1) {
-					if (sprites[index].draw_priority) {
+					if (sprites[index]->draw_priority) {
 						if (show_background[y_position*256+x_position] and background[y_position*256+x_position].r == 255) {
 							show_sprite[y_position*256+x_position] = true;
 							sprite_map[y_position*256+x_position] = pixel;
@@ -426,20 +319,6 @@ void Display::DrawSprites(uint8_t lcd_control, int line_number, std::vector<Spri
 
 				--bit;
 			}
-
-			//if (sprites[index].tile_number == 0x59) {
-			/*if (sprites[index].tile_number == 0xB1) {
-				std::cout << std::hex << "Tile number: " << static_cast<unsigned int>(sprites[index].tile_number)
-									  << ", Palette: " << static_cast<unsigned int>(sprites[index].palette)
-				                      << ", Attribute: " << static_cast<unsigned int>(sprites[index].attributes)
-									  << ", Tile value at address: " << std::endl;
-				uint16_t line = tile_address;
-				std::cout << "Address: " << static_cast<unsigned int>(line) << std::endl;
-				for (unsigned int offset = 0; offset < 16; ++offset) {
-					unsigned int value = mmu->ReadByte(line+offset);
-					std::cout << std::dec << value << std::endl;
-				}
-			}*/
 
 			++drawn_count;
 		}
@@ -475,3 +354,43 @@ std::array<int, 8> Display::DrawTilePattern(uint16_t tile_address, int tile_line
 	
 	return pixels;
 }
+
+/**
+ * Updates corresponding sprite (based on address, 00-A0) with value.
+ */
+void Display::UpdateSprite(uint8_t sprite_address, uint8_t value) {
+	// Each sprite takes up 4 bytes, so find the sprite based on which address it's on
+	std::size_t sprite_index = std::floor(static_cast<double>(sprite_address) / 4.0);
+	auto& sprite = sprite_array[sprite_index];
+	
+	// Update based on which byte of sprite is being modified
+	auto offset = sprite_address % 4;
+	switch (offset) {
+		case 0:
+			// Y Position
+			sprite.y = value - 16;
+			break;
+			
+		case 1:
+			// X Position
+			sprite.x = value;
+			break;
+		
+		case 2:
+			// Tile Number
+			sprite.tile_number = value;
+			break;
+		
+		case 3:
+			// Attributes
+			uint8_t lcd_control = mmu->zram[0xFF40 & 0xFF];
+			
+			sprite.attributes = value;
+			sprite.x_flip = (sprite.attributes & 0x20) ? true : false;
+			sprite.y_flip = (sprite.attributes & 0x40) ? true : false;
+			sprite.draw_priority = (sprite.attributes & 0x80) ? true : false; // If true, don't draw over background/window colors 1-3
+			sprite.palette = ((sprite.attributes & 0x10)) ? mmu->ReadByte(0xFF49) : mmu->ReadByte(0xFF48); // Which palette to use (0=OBP0, 1=OBP1)
+			sprite.height = (lcd_control & 0x04)?16:8;
+			break;
+	}
+} 

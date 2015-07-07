@@ -6,7 +6,8 @@
 #include "Input.hpp"
 #include "MemoryManagementUnit.hpp"
 
-Input::Input() {
+Input::Input()
+	: current_save_slot(1) {
     Reset();
 }
 
@@ -90,7 +91,57 @@ bool Input::PollEvents() {
         if (event.type == sf::Event::Closed) {
             window->close();
             return false;
-        }
+        } else if (event.type == sf::Event::KeyPressed) {
+			switch (event.key.code) {
+				// Choose Save/Load Slot for game
+				case sf::Keyboard::Num1:
+				case sf::Keyboard::Numpad1:
+					current_save_slot = 1;
+					break;
+					
+				case sf::Keyboard::Num2:
+					current_save_slot = 2;
+					break;
+					
+				case sf::Keyboard::Num3:
+					current_save_slot = 3;
+					break;	
+					
+				case sf::Keyboard::Num4:
+					current_save_slot = 4;
+					break;	
+					
+				case sf::Keyboard::Num5:
+					current_save_slot = 5;
+					break;	
+					
+				case sf::Keyboard::Num6:
+					current_save_slot = 6;
+					break;	
+					
+				case sf::Keyboard::Num7:
+					current_save_slot = 7;
+					break;	
+					
+				case sf::Keyboard::Num8:
+					current_save_slot = 8;
+					break;	
+				
+				case sf::Keyboard::Num9:
+					current_save_slot = 9;
+					break;	
+					
+				// Save game state for current slot	
+				case sf::Keyboard::S:
+					//SaveGameState(current_save_slot);
+					break;
+					
+				// Load game state for current slot	
+				case sf::Keyboard::L:
+					//LoadGameState(current_save_slot);
+					break;	
+			}
+		}
     }
 
     return true;
@@ -166,4 +217,12 @@ void Input::UpdateInput() {
         KeyUp(KeyType::SELECT);
         select = false;
     }
+}
+
+void Input::SaveGameState(int current_save_slot) {
+	// Save file format: GAMENAME_SLOTNUMBER.gbs
+}
+
+void Input::LoadGameState(int current_save_slot) {
+	// Load file format: GAMENAME_SLOTNUMBER.gbs
 }

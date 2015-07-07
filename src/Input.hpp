@@ -43,6 +43,9 @@ public:
     void UpdateInput();
     void KeyUp(KeyType key);
     void KeyDown(KeyType key);
+	
+	void SaveGameState(int current_save_slot);
+	void LoadGameState(int current_save_slot);
 
 private:
     MemoryManagementUnit* mmu;
@@ -50,6 +53,8 @@ private:
 
     std::array<uint8_t, 2> rows;
     uint8_t column;
+	
+	int current_save_slot;
 };
 
 #endif //GAMEBOYEMULATOR_INPUT_HPP
