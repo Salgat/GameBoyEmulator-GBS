@@ -120,6 +120,8 @@ void MemoryManagementUnit::Reset() {
     // Setup ROM banks and RAM
     // Setup controller
     mbc = MemoryBankController();
+    
+    updateSaveFile = false;
 
     // Setup configuration of controller type
     cartridge_type = cartridge_rom[0x0147];
@@ -578,7 +580,8 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
         // External RAM
         case 0xA000:
         case 0xB000:
-			if (mbc.mbc1) {
+			if (mbc.mbc1 or mbc.mbc2) {
+                // TODO: I believe MBC2 is only the first 512 bytes with the upper nibble ignored (set to 0xF)
                 eram[mbc.ram_offset + (address & 0x1FFF)] = value;
             } else if (mbc.mbc3) {
                 if (mbc.ram_bank <= 0x03) {
@@ -586,6 +589,9 @@ void MemoryManagementUnit::WriteByte(uint16_t address, uint8_t value) {
                 } else {
                     // TODO: Implement writing to RTC
                 }
+            }
+            if (mbc.battery) {
+                updateSaveFile = true;
             }
             break;
 

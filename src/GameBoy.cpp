@@ -5,6 +5,8 @@
 #include "GameBoy.hpp"
 
 #include <iostream>
+#include <fstream>
+
 
 GameBoy::GameBoy(sf::RenderWindow& window)
 	: screen_size(1)
@@ -26,6 +28,7 @@ void GameBoy::Reset() {
     cpu.Reset();
     mmu.Reset();
     timer.Reset();
+    frame_counter = 0;
 }
 
 // Todo: Frame calling v-blank 195-196x per frame??
@@ -62,6 +65,26 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
 	if (!v_blank) {
 		frame = display.RenderFrame();
 	}
-	
+    
+    // Update the .SAV file if flagged (once per second)
+    if (++frame_counter >= 60) {
+        frame_counter = 0;
+        if (mmu.updateSaveFile) {
+            SaveGame();
+            mmu.updateSaveFile = false;
+        }
+    }
 	return std::make_pair(frame, running);
+}
+
+/**
+ * Saves eram to a .SAV file. (RTC is not implemented yet)
+ */
+void GameBoy::SaveGame() {
+    std::string save_name = mmu.game_title + std::string(".sav");
+    
+    std::ofstream OutFile;
+    OutFile.open(save_name, std::ios::out | std::ios::binary);
+    std::copy(mmu.eram.begin(), mmu.eram.begin()+0x8000, std::ostreambuf_iterator<char>(OutFile));
+    OutFile.close();
 }

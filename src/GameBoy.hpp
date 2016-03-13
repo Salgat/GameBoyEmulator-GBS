@@ -35,12 +35,15 @@ public:
 
 //private:
     sf::Image frame;
+    unsigned int frame_counter;
 
     Processor cpu;
     MemoryManagementUnit mmu;
     Display display;
     Timer timer;
     Input input;
+    
+    void SaveGame();
 };
 
 #endif //GAMEBOYEMULATOR_GAMEBOY_HPP
