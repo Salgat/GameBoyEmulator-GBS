@@ -31,7 +31,7 @@ public:
 
     void Reset();
     std::pair<sf::Image, bool> RenderFrame();
-    void LoadGame(std::string rom_name);
+    void LoadGame(std::string rom_name, std::string save_file);
 
 //private:
     sf::Image frame;

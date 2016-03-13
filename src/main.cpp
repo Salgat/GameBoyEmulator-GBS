@@ -22,11 +22,14 @@ void DrawFrame(sf::Image const& frame) {
 
 int main(int argc, char* argv[]) {
     std::string game_name = "";
+    std::string save_file = "";
     for (int argument = 1; argument < argc; ++argument) {
         auto arg = std::string(argv[argument]);
         if (arg.find("-game=") == 0) {
             // Game's File Name to load
             game_name = arg.substr(6);
+        } else if (arg.find("-save=") == 0) {
+            save_file = arg.substr(6);
         }
     }
 
@@ -37,7 +40,7 @@ int main(int argc, char* argv[]) {
 
     window.create(sf::VideoMode(160, 144), "GBS");
     GameBoy gameboy(window);
-    gameboy.LoadGame(game_name);
+    gameboy.LoadGame(game_name, save_file);
 
 	bool running = true;
     auto start_time = std::chrono::steady_clock::now();

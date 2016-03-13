@@ -17,7 +17,9 @@ https://github.com/Salgat/BubbleGrow/wiki/Building-from-source
 
 Running the emulator
 ------------------------------------------
-To run after building: GameBoyEmulator.exe -game="Super Mario Land 2.gb"
+To run after building: GameBoyEmulator.exe -game="Super Mario Land 2.gb" -save="SuperMarioSave.sav"
+
+(the save parameter is optional)
 
 Controls
 ------------------------------------------

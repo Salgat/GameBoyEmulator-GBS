@@ -77,12 +77,14 @@ public:
     bool updateSaveFile;
 	
 	std::string game_title;
+    std::string save_name;
 
     MemoryManagementUnit();
 
     void Initialize(Processor* cpu_, Input* input_, Display* display_, Timer* timer_);
     void Reset();
     void LoadRom(std::string rom_name);
+    void LoadSave(std::string save_filename);
 
     // Memory Access
     uint8_t ReadByte(uint16_t address);

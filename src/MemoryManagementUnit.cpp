@@ -5,7 +5,8 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-
+#include <iomanip>
+#include <iterator>
 
 #include "MemoryManagementUnit.hpp"
 #include "Input.hpp"
@@ -27,6 +28,8 @@ MemoryManagementUnit::MemoryManagementUnit() {
     hram = std::vector<uint8_t>(0x100, 0);
 
     Reset();
+    
+    save_name = "";
 }
 
 /**
@@ -703,5 +706,22 @@ void MemoryManagementUnit::TransferToOAM(uint16_t origin) {
         uint8_t value = ReadByte(origin+offset);
         oam[offset] = value;
 		display->UpdateSprite(offset, value);
+    }
+}
+
+/**
+ * Reads save file (.SAV) into eram.
+ */
+void MemoryManagementUnit::LoadSave(std::string save_filename) {
+    save_name = save_filename;
+    std::string save_location = "../../rom/" + save_name;
+    
+    std::cout << "Loading save file: " << save_location;
+    
+    std::ifstream input(save_location, std::ios::in | std::ios::binary);
+    char byte;
+    std::size_t index = 0;
+    while(input.get(byte) and index < 0x8000) {
+        eram[index++] = static_cast<uint8_t>(byte);
     }
 }

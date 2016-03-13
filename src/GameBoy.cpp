@@ -20,8 +20,11 @@ GameBoy::GameBoy(sf::RenderWindow& window)
 	Reset();
 }
 
-void GameBoy::LoadGame(std::string rom_name) {
+void GameBoy::LoadGame(std::string rom_name, std::string save_file) {
     mmu.LoadRom(rom_name);
+    if (save_file != "") {
+        mmu.LoadSave(save_file);
+    }
 }
 
 void GameBoy::Reset() {
@@ -81,7 +84,12 @@ std::pair<sf::Image, bool> GameBoy::RenderFrame() {
  * Saves eram to a .SAV file. (RTC is not implemented yet)
  */
 void GameBoy::SaveGame() {
-    std::string save_name = mmu.game_title + std::string(".sav");
+    std::string save_name;
+    if (mmu.save_name == "") {
+        save_name = "../../rom/" + mmu.game_title + std::string(".sav");
+    } else {
+        save_name = "../../rom/" +mmu.save_name;
+    }
     
     std::ofstream OutFile;
     OutFile.open(save_name, std::ios::out | std::ios::binary);
